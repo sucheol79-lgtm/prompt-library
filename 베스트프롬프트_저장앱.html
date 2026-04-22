@@ -1,0 +1,1553 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>베스트 프롬프트 라이브러리 — VINYL C</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0E0E10;--surface:#17171A;--s2:#1F1F24;--s3:#27272D;
+  --border:#2E2E36;--border2:#3A3A45;
+  --mag:#C631C7;--mag2:#9B22A0;--gold:#E8A000;--blue:#4A90D9;--green:#2ECC8A;
+  --t1:#F0F0F2;--t2:#9898A8;--t3:#5A5A6A;
+  --r:10px;--rs:6px;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;background:var(--bg);color:var(--t1);min-height:100vh;line-height:1.6}
+
+/* ── HEADER ── */
+.hdr{background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:100}
+.logo{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;letter-spacing:.1em;color:var(--t1)}
+.logo-dot{width:8px;height:8px;border-radius:50%;background:var(--mag)}
+.hdr-right{display:flex;align-items:center;gap:8px}
+.total-badge{font-size:12px;color:var(--t2);background:var(--s2);border:1px solid var(--border);padding:4px 11px;border-radius:99px}
+.total-badge span{color:var(--mag);font-weight:600}
+
+/* ── HDR BUTTONS ── */
+.hbtn{display:flex;align-items:center;gap:6px;background:none;border:1px solid var(--border);border-radius:var(--rs);padding:6px 12px;font-family:inherit;font-size:12px;cursor:pointer;transition:all .15s;white-space:nowrap}
+.hbtn-share{color:var(--blue)}.hbtn-share:hover{color:#7ab8f0;border-color:var(--blue);background:rgba(74,144,217,.08)}
+.hbtn-key{color:var(--t3)}.hbtn-key:hover{color:var(--t1);border-color:var(--border2)}
+.hbtn-key.set{color:var(--green);border-color:#1a7a52}
+
+/* ── LAYOUT ── */
+.layout{display:grid;grid-template-columns:240px 1fr;min-height:calc(100vh - 56px)}
+
+/* ── SIDEBAR ── */
+.sidebar{background:var(--surface);border-right:1px solid var(--border);padding:20px 0;position:sticky;top:56px;height:calc(100vh - 56px);overflow-y:auto}
+.sb-label{font-size:10px;font-weight:600;letter-spacing:.1em;color:var(--t3);padding:0 18px;margin-bottom:8px}
+.sb-divider{border:none;border-top:1px solid var(--border);margin:12px 0}
+.cat-btn{width:100%;display:flex;align-items:center;gap:10px;padding:9px 18px;background:none;border:none;cursor:pointer;font-family:inherit;font-size:13px;color:var(--t2);text-align:left;transition:all .15s;position:relative}
+.cat-btn:hover{background:var(--s2);color:var(--t1)}
+.cat-btn.active{background:var(--s2);color:var(--t1)}
+.cat-btn.active::before{content:'';position:absolute;left:0;top:6px;bottom:6px;width:3px;background:var(--mag);border-radius:0 3px 3px 0}
+.cat-icon{font-size:15px;width:20px;text-align:center}
+.cat-cnt{margin-left:auto;font-size:11px;background:var(--s3);color:var(--t3);padding:1px 7px;border-radius:99px;min-width:22px;text-align:center}
+.cat-btn.active .cat-cnt{background:var(--mag2);color:#fff}
+.cat-del{display:none;background:none;border:none;color:var(--t3);font-size:13px;cursor:pointer;padding:0;margin-left:-4px;flex-shrink:0;line-height:1}
+.cat-btn:hover .cat-del{display:flex;align-items:center;justify-content:center}
+.cat-del:hover{color:#E07070}
+.sb-add-wrap{padding:8px 12px 4px}
+.sb-add-row{display:flex;gap:6px;align-items:center}
+.sb-add-input{flex:1;background:var(--s2);border:1px solid var(--border);border-radius:var(--rs);padding:6px 10px;font-family:inherit;font-size:12px;color:var(--t1);outline:none;transition:border-color .15s;min-width:0}
+.sb-add-input::placeholder{color:var(--t3)}
+.sb-add-input:focus{border-color:var(--mag)}
+.sb-add-btn{width:28px;height:28px;background:var(--mag);border:none;border-radius:var(--rs);color:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .13s}
+.sb-add-btn:hover{background:var(--mag2)}
+
+/* ── MAIN ── */
+.main{padding:28px 32px}
+.topbar{display:flex;align-items:center;gap:12px;margin-bottom:20px}
+.search-wrap{flex:1;position:relative}
+.search-wrap svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--t3);pointer-events:none}
+.search-input{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:var(--rs);padding:9px 12px 9px 36px;font-family:inherit;font-size:13px;color:var(--t1);outline:none;transition:border-color .15s}
+.search-input::placeholder{color:var(--t3)}
+.search-input:focus{border-color:var(--mag)}
+.btn-ai{display:flex;align-items:center;gap:7px;background:var(--surface);color:var(--gold);border:1px solid #5a4000;border-radius:var(--rs);padding:9px 16px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;white-space:nowrap}
+.btn-ai:hover{background:rgba(232,160,0,.1);border-color:var(--gold)}
+.btn-ai:active{transform:scale(.97)}
+.btn-ai.loading{opacity:.6;pointer-events:none}
+.btn-add{display:flex;align-items:center;gap:7px;background:var(--mag);color:#fff;border:none;border-radius:var(--rs);padding:9px 18px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;white-space:nowrap}
+.btn-add:hover{background:var(--mag2)}
+.btn-add:active{transform:scale(.97)}
+
+.sec-title{font-size:15px;font-weight:600;color:var(--t1);margin-bottom:4px;display:flex;align-items:center;gap:8px}
+.sec-sub{font-size:12px;color:var(--t3);margin-bottom:20px}
+
+/* ── CARDS ── */
+.card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+.prompt-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:18px;cursor:pointer;transition:border-color .15s,transform .15s;position:relative;display:flex;flex-direction:column;gap:10px}
+.prompt-card:hover{border-color:var(--border2);transform:translateY(-1px)}
+.prompt-card.featured{border-color:var(--mag)}
+.prompt-card.featured::after{content:'★ BEST';position:absolute;top:-1px;right:14px;font-size:10px;font-weight:700;letter-spacing:.08em;background:var(--mag);color:#fff;padding:2px 8px;border-radius:0 0 6px 6px}
+.card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.card-tag{font-size:10px;font-weight:600;letter-spacing:.08em;padding:3px 9px;border-radius:99px;border:1px solid}
+.tag-prd{color:var(--mag);border-color:var(--mag2);background:rgba(198,49,199,.08)}
+.tag-ux{color:var(--blue);border-color:#2a5a9a;background:rgba(74,144,217,.08)}
+.tag-doc{color:var(--gold);border-color:#8a6000;background:rgba(232,160,0,.08)}
+.tag-dev{color:var(--green);border-color:#1a7a52;background:rgba(46,204,138,.08)}
+.tag-data{color:#E07070;border-color:#7a3030;background:rgba(224,112,112,.08)}
+.tag-mkt{color:#A0C4E8;border-color:#3a607a;background:rgba(160,196,232,.08)}
+.tag-custom{color:var(--t2);border-color:var(--border2);background:rgba(255,255,255,.04)}
+.card-actions{display:flex;gap:6px;opacity:0;transition:opacity .15s}
+.prompt-card:hover .card-actions{opacity:1}
+.icon-btn{width:28px;height:28px;background:var(--s2);border:1px solid var(--border);border-radius:var(--rs);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;transition:background .12s}
+.icon-btn:hover{background:var(--s3)}
+.card-title{font-size:14px;font-weight:600;color:var(--t1)}
+.card-prompt{font-family:'SF Mono',ui-monospace,monospace;font-size:11.5px;color:var(--t2);line-height:1.7;background:var(--s2);border-radius:var(--rs);padding:10px 12px;max-height:80px;overflow:hidden;position:relative}
+.card-prompt::after{content:'';position:absolute;bottom:0;left:0;right:0;height:24px;background:linear-gradient(transparent,var(--s2))}
+.card-meta{display:flex;align-items:center;justify-content:space-between;font-size:11px;color:var(--t3)}
+.card-tools{display:flex;gap:4px;flex-wrap:wrap}
+.tool-badge{font-size:10px;padding:2px 7px;background:var(--s3);border-radius:99px;color:var(--t2)}
+.card-date{font-size:11px;color:var(--t3);text-align:right;margin-top:2px}
+
+/* ── EMPTY ── */
+.empty{grid-column:1/-1;text-align:center;padding:60px 20px;color:var(--t3)}
+.empty-icon{font-size:40px;margin-bottom:12px}
+.empty-title{font-size:15px;font-weight:600;color:var(--t2);margin-bottom:6px}
+
+/* ── AI PANEL ── */
+.ai-panel{display:none;background:#1a1408;border:1px solid #5a4000;border-radius:var(--r);padding:20px;margin-bottom:20px;position:relative;overflow:hidden}
+.ai-panel::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--gold),var(--mag))}
+.ai-panel.open{display:block;animation:panelIn .25s ease}
+@keyframes panelIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
+.ai-panel-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.ai-panel-title{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--gold)}
+.ai-close-btn{width:24px;height:24px;background:none;border:none;color:var(--t3);font-size:14px;cursor:pointer;border-radius:var(--rs);display:flex;align-items:center;justify-content:center;transition:color .12s}
+.ai-close-btn:hover{color:var(--t1)}
+.ai-rec-list{display:flex;flex-direction:column;gap:10px}
+.ai-rec-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--rs);padding:14px 16px;cursor:pointer;transition:border-color .15s;position:relative}
+.ai-rec-card:hover{border-color:var(--gold)}
+.ai-rank{position:absolute;top:-1px;left:12px;font-size:10px;font-weight:700;padding:2px 8px;border-radius:0 0 6px 6px;letter-spacing:.06em}
+.rank-1{background:var(--gold);color:#1a1200}
+.rank-2,.rank-3{background:var(--s3);color:var(--t2)}
+.ai-rec-title{font-size:13px;font-weight:600;color:var(--t1);margin-top:10px;margin-bottom:6px}
+.ai-rec-reason{font-size:12px;color:var(--t2);line-height:1.6}
+.ai-rec-meta{margin-top:8px;display:flex;align-items:center;gap:6px;font-size:11px;color:var(--t3)}
+.ai-score{display:flex;align-items:center;gap:3px;color:var(--gold);font-weight:600;font-size:11px}
+.skel-list{display:flex;flex-direction:column;gap:10px}
+.skel-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--rs);padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+.skel-line{height:12px;background:var(--s3);border-radius:4px;animation:shimmer 1.4s infinite}
+@keyframes shimmer{0%,100%{opacity:.4}50%{opacity:.9}}
+
+/* ── MODALS ── */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;align-items:center;justify-content:center;padding:20px}
+.overlay.open{display:flex}
+.modal{background:var(--surface);border:1px solid var(--border2);border-radius:14px;width:100%;max-width:600px;max-height:90vh;overflow-y:auto;animation:modalIn .2s ease}
+@keyframes modalIn{from{opacity:0;transform:translateY(12px) scale(.97)}to{opacity:1;transform:none}}
+.modal-hdr{padding:20px 24px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.modal-title{font-size:16px;font-weight:600}
+.modal-x{width:32px;height:32px;background:var(--s2);border:1px solid var(--border);border-radius:var(--rs);cursor:pointer;font-size:16px;color:var(--t2);display:flex;align-items:center;justify-content:center;transition:background .12s}
+.modal-x:hover{background:var(--s3)}
+.modal-body{padding:20px 24px;display:flex;flex-direction:column;gap:16px}
+.modal-footer{padding:16px 24px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form-group{display:flex;flex-direction:column;gap:6px}
+.form-label{font-size:12px;font-weight:600;color:var(--t2);letter-spacing:.04em}
+.form-label .req{color:var(--mag);margin-left:2px}
+.form-input,.form-select,.form-textarea{background:var(--s2);border:1px solid var(--border);border-radius:var(--rs);padding:9px 12px;font-family:inherit;font-size:13px;color:var(--t1);outline:none;transition:border-color .15s;width:100%}
+.form-input::placeholder,.form-textarea::placeholder{color:var(--t3)}
+.form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--mag)}
+.form-select option{background:var(--s2)}
+.form-textarea{font-family:'SF Mono',ui-monospace,monospace;font-size:12.5px;resize:vertical;min-height:120px;line-height:1.7}
+.form-hint{font-size:11px;color:var(--t3)}
+input[type="date"]{color-scheme:dark}
+.chips{display:flex;flex-wrap:wrap;gap:7px}
+.chip{font-size:12px;padding:5px 13px;border-radius:99px;border:1px solid var(--border);background:var(--s2);color:var(--t2);cursor:pointer;transition:all .13s;user-select:none}
+.chip:hover{border-color:var(--border2);color:var(--t1)}
+.chip.on{border-color:var(--mag);background:rgba(198,49,199,.12);color:var(--mag)}
+.star-row{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--t2);cursor:pointer;user-select:none}
+.star-row input{display:none}
+.star-box{width:40px;height:22px;background:var(--s3);border-radius:99px;position:relative;transition:background .2s}
+.star-box::after{content:'';position:absolute;width:16px;height:16px;background:var(--t3);border-radius:50%;top:3px;left:3px;transition:all .2s}
+.star-row input:checked+.star-box{background:var(--mag)}
+.star-row input:checked+.star-box::after{left:21px;background:#fff}
+.btn-cancel{padding:9px 20px;background:var(--s2);border:1px solid var(--border);border-radius:var(--rs);font-family:inherit;font-size:13px;color:var(--t2);cursor:pointer;transition:background .12s}
+.btn-cancel:hover{background:var(--s3)}
+.btn-save{padding:9px 24px;background:var(--mag);border:none;border-radius:var(--rs);font-family:inherit;font-size:13px;font-weight:600;color:#fff;cursor:pointer;transition:background .15s}
+.btn-save:hover{background:var(--mag2)}
+
+/* ── VIEW MODAL ── */
+.view-prompt{font-family:'SF Mono',ui-monospace,monospace;font-size:12.5px;line-height:1.8;color:var(--t2);background:var(--s2);border-radius:var(--rs);padding:16px;white-space:pre-wrap;word-break:break-word;max-height:300px;overflow-y:auto}
+.copy-btn{width:100%;padding:11px;background:rgba(198,49,199,.12);border:1px solid var(--mag);border-radius:var(--rs);font-family:inherit;font-size:13px;font-weight:600;color:var(--mag);cursor:pointer;transition:background .15s}
+.copy-btn:hover{background:rgba(198,49,199,.22)}
+
+/* ── API KEY MODAL ── */
+.apikey-notice{background:rgba(232,160,0,.08);border:1px solid #5a4000;border-radius:var(--rs);padding:11px 14px;font-size:12px;color:#c88800;line-height:1.7}
+.apikey-notice strong{color:var(--gold)}
+.apikey-wrap{position:relative}
+.apikey-wrap input{padding-right:44px;font-family:'SF Mono',ui-monospace,monospace;font-size:12px}
+.apikey-eye{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--t3);cursor:pointer;font-size:14px;padding:2px}
+.apikey-eye:hover{color:var(--t1)}
+.apikey-status{display:flex;align-items:center;gap:6px;font-size:12px}
+.apikey-dot{width:7px;height:7px;border-radius:50%;background:var(--t3)}
+.apikey-dot.set{background:var(--green)}
+
+/* ── SHARE MODAL ── */
+.share-list{display:flex;flex-direction:column;gap:10px}
+.share-item{background:var(--s2);border:1px solid var(--border);border-radius:var(--rs);padding:14px 16px;display:flex;align-items:center;gap:14px;cursor:pointer;transition:all .15s}
+.share-item:hover{border-color:var(--border2);background:var(--s3)}
+.share-icon{width:36px;height:36px;border-radius:var(--rs);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.si-blue{background:rgba(74,144,217,.15)}
+.si-green{background:rgba(46,204,138,.15)}
+.si-gold{background:rgba(232,160,0,.15)}
+.share-info{flex:1}
+.share-title{font-size:13px;font-weight:600;color:var(--t1);margin-bottom:2px}
+.share-desc{font-size:11px;color:var(--t3);line-height:1.5}
+.share-arr{color:var(--t3);font-size:16px}
+.share-notice{background:var(--s2);border-radius:var(--rs);padding:10px 14px;font-size:11px;color:var(--t3);line-height:1.6;border-left:3px solid var(--border2)}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:28px;right:28px;background:var(--s3);border:1px solid var(--border2);border-radius:var(--rs);padding:12px 18px;font-size:13px;color:var(--t1);display:flex;align-items:center;gap:8px;z-index:300;opacity:0;transform:translateY(8px);transition:all .25s;pointer-events:none}
+.toast.show{opacity:1;transform:none}
+.toast-dot{width:7px;height:7px;border-radius:50%;background:var(--green);flex-shrink:0}
+
+/* ── FAB ── */
+.fab{display:none;position:fixed;bottom:64px;right:16px;width:52px;height:52px;background:var(--mag);border:none;border-radius:50%;color:#fff;font-size:26px;align-items:center;justify-content:center;cursor:pointer;z-index:95;box-shadow:0 4px 20px rgba(198,49,199,.5);transition:all .15s}
+.fab:active{transform:scale(.92);background:var(--mag2)}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:99px}
+
+/* ── MOBILE ── */
+@media(max-width:680px){
+  .hdr{padding:0 14px;height:50px}
+  .logo{font-size:11px}
+  .hbtn span,.btn-add span,.hbtn-key-label{display:none}
+  .hbtn{padding:6px 8px}
+  .total-badge{font-size:11px;padding:3px 9px}
+  .layout{display:block;padding-bottom:118px}
+  .sidebar{position:fixed;bottom:0;left:0;right:0;top:auto;height:54px;border-right:none;border-top:1px solid var(--border);padding:0 8px;display:flex;flex-direction:row;align-items:center;gap:4px;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:none;z-index:90}
+  .sidebar::-webkit-scrollbar{display:none}
+  .sb-label,.sb-divider,.sb-add-wrap{display:none!important}
+  .cat-btn{flex-shrink:0;width:auto;padding:6px 13px;border-radius:99px;border:1px solid var(--border);font-size:12px;white-space:nowrap;background:var(--s2)}
+  .cat-btn.active{background:var(--mag);color:#fff;border-color:var(--mag)}
+  .cat-btn.active::before{display:none}
+  .cat-btn.active .cat-cnt{background:rgba(255,255,255,.25);color:#fff}
+  .cat-del{display:none!important}
+  .main{padding:14px}
+  .topbar{gap:8px;margin-bottom:14px}
+  .btn-add{display:none}
+  .card-grid{grid-template-columns:1fr;gap:10px}
+  .card-actions{opacity:1!important}
+  .overlay{padding:0;align-items:flex-end}
+  .modal{border-radius:18px 18px 0 0;max-height:92vh;max-width:100%}
+  .modal-body{padding:16px 18px;gap:12px}
+  .modal-hdr{padding:16px 18px 12px}
+  .modal-footer{padding:12px 18px 28px}
+  .form-row{grid-template-columns:1fr}
+  .fab{display:flex}
+}
+
+/* ── GITHUB 연동 상태 배지 ── */
+.gh-badge {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 11px; padding: 3px 10px;
+  border-radius: 99px; border: 1px solid var(--border);
+  color: var(--t3); cursor: pointer; transition: all .15s;
+  background: var(--s2);
+}
+.gh-badge:hover { border-color: var(--border2); color: var(--t1); }
+.gh-badge.connected { color: var(--green); border-color: #1a7a52; }
+.gh-badge.syncing   { color: var(--gold);  border-color: #5a4000; }
+.gh-badge.error     { color: #E07070;      border-color: #7a3030; }
+.gh-dot { width:6px; height:6px; border-radius:50%; background:var(--t3); flex-shrink:0; }
+.gh-badge.connected .gh-dot { background:var(--green); }
+.gh-badge.syncing   .gh-dot { background:var(--gold); animation: pulse .8s infinite; }
+.gh-badge.error     .gh-dot { background:#E07070; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+/* ── GITHUB 설정 모달 ── */
+.gh-section { display:flex; flex-direction:column; gap:6px; }
+.gh-section-title {
+  font-size:11px; font-weight:600; color:var(--t3);
+  letter-spacing:.08em; text-transform:uppercase;
+  padding-bottom:6px; border-bottom:1px solid var(--border);
+}
+.gh-token-wrap { position:relative; }
+.gh-token-wrap input { padding-right:44px; font-family:'SF Mono',ui-monospace,monospace; font-size:12px; }
+.gh-eye { position:absolute; right:10px; top:50%; transform:translateY(-50%); background:none; border:none; color:var(--t3); cursor:pointer; font-size:14px; }
+.gh-eye:hover { color:var(--t1); }
+.gh-notice {
+  background:rgba(74,144,217,.08); border:1px solid #1a3a5a;
+  border-radius:var(--rs); padding:10px 14px;
+  font-size:12px; color:#7ab8f0; line-height:1.7;
+}
+.gh-notice strong { color:var(--blue); }
+.gh-notice a { color:var(--blue); }
+.gh-status-row { display:flex; align-items:center; justify-content:space-between; }
+.gh-sync-btn {
+  display:flex; align-items:center; gap:6px;
+  background:rgba(74,144,217,.12); border:1px solid var(--blue);
+  border-radius:var(--rs); padding:7px 14px;
+  font-family:inherit; font-size:12px; font-weight:600;
+  color:var(--blue); cursor:pointer; transition:all .15s;
+}
+.gh-sync-btn:hover { background:rgba(74,144,217,.22); }
+.gh-sync-btn:disabled { opacity:.5; pointer-events:none; }
+.gh-last-sync { font-size:11px; color:var(--t3); }
+
+</style>
+</head>
+<body>
+
+<header class="hdr">
+  <div class="logo">
+    <div class="logo-dot"></div>
+    VINYL C &nbsp;|&nbsp; BEST PROMPT LIBRARY
+  </div>
+  <div class="hdr-right">
+    <div class="gh-badge" id="ghBadge" onclick="openModal('ghModal')">
+      <div class="gh-dot" id="ghDot"></div>
+      <span id="ghBadgeLabel">GitHub 연동</span>
+    </div>
+    <button class="hbtn hbtn-share" onclick="openModal('shareModal')">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+      <span>공유</span>
+    </button>
+    <button class="hbtn hbtn-key" id="btnKey" onclick="openModal('keyModal')">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0 3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+      <span class="hbtn-key-label" id="keyLabel">API 키 설정</span>
+    </button>
+    <div class="total-badge">프롬프트 <span id="totalCount">0</span>개</div>
+  </div>
+</header>
+
+<button class="fab" onclick="openAddModal()" aria-label="프롬프트 등록">+</button>
+
+<div class="layout">
+  <aside class="sidebar" id="sidebar">
+    <div class="sb-label">산출물 유형</div>
+    <button class="cat-btn active" data-cat="all" onclick="filterCat('all',this)">
+      <span class="cat-icon">📋</span> 전체 <span class="cat-cnt" id="cnt-all">0</span>
+    </button>
+    <button class="cat-btn" data-cat="prd" onclick="filterCat('prd',this)">
+      <span class="cat-icon">📝</span> PRD / 기획서 <span class="cat-cnt" id="cnt-prd">0</span>
+    </button>
+    <button class="cat-btn" data-cat="ux" onclick="filterCat('ux',this)">
+      <span class="cat-icon">🎨</span> UX / 화면설계 <span class="cat-cnt" id="cnt-ux">0</span>
+    </button>
+    <button class="cat-btn" data-cat="doc" onclick="filterCat('doc',this)">
+      <span class="cat-icon">📄</span> 보고서 / 문서 <span class="cat-cnt" id="cnt-doc">0</span>
+    </button>
+    <button class="cat-btn" data-cat="dev" onclick="filterCat('dev',this)">
+      <span class="cat-icon">💻</span> 개발 / 코드 <span class="cat-cnt" id="cnt-dev">0</span>
+    </button>
+    <button class="cat-btn" data-cat="data" onclick="filterCat('data',this)">
+      <span class="cat-icon">📊</span> 데이터 분석 <span class="cat-cnt" id="cnt-data">0</span>
+    </button>
+    <button class="cat-btn" data-cat="mkt" onclick="filterCat('mkt',this)">
+      <span class="cat-icon">📣</span> 마케팅 / 카피 <span class="cat-cnt" id="cnt-mkt">0</span>
+    </button>
+    <div id="customCats"></div>
+    <div class="sb-add-wrap">
+      <div class="sb-add-row">
+        <input class="sb-add-input" id="newCatInput" type="text" placeholder="+ 유형 직접 추가" maxlength="20"
+          onkeydown="if(event.key==='Enter')addCat()">
+        <button class="sb-add-btn" onclick="addCat()">+</button>
+      </div>
+    </div>
+    <hr class="sb-divider">
+    <div class="sb-label">필터</div>
+    <button class="cat-btn" data-cat="best" onclick="filterCat('best',this)">
+      <span class="cat-icon">⭐</span> BEST만 보기 <span class="cat-cnt" id="cnt-best">0</span>
+    </button>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="search-wrap">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input class="search-input" id="searchBox" type="text" placeholder="프롬프트 검색..." oninput="onSearch(this.value)">
+      </div>
+      <button class="btn-ai" id="btnAi" onclick="openAi()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+        AI 추천
+      </button>
+      <button class="btn-add" onclick="openAddModal()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+        프롬프트 등록
+      </button>
+    </div>
+
+    <div class="ai-panel" id="aiPanel">
+      <div class="ai-panel-hdr">
+        <div class="ai-panel-title">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          Claude AI 추천 결과
+          <span id="aiCatLabel" style="font-size:11px;font-weight:400;color:var(--t3)"></span>
+        </div>
+        <button class="ai-close-btn" onclick="closeAi()">✕</button>
+      </div>
+      <div id="aiBody"></div>
+    </div>
+
+    <div class="sec-title" id="secTitle">📋 전체 프롬프트</div>
+    <div class="sec-sub" id="secSub">모든 산출물 유형의 베스트 프롬프트</div>
+    <div class="card-grid" id="cardGrid"></div>
+  </main>
+</div>
+
+
+<!-- ── GITHUB 설정 모달 ── -->
+<div class="overlay" id="ghModal">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-hdr">
+      <div class="modal-title">GitHub 연동 설정</div>
+      <button class="modal-x" onclick="closeModal('ghModal')">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <div class="gh-notice">
+        <strong>GitHub을 DB로 사용합니다.</strong><br>
+        저장소의 <code>data/prompts.json</code> 파일에 데이터가 저장됩니다.<br>
+        Token은 브라우저 localStorage에 암호화 없이 저장되니 <strong>개인 PC</strong>에서만 사용하세요.
+      </div>
+
+      <div class="gh-section">
+        <div class="gh-section-title">저장소 정보</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">GitHub 사용자명 <span class="req">*</span></label>
+            <input class="form-input" id="ghUser" type="text" placeholder="예: vinylc-team">
+          </div>
+          <div class="form-group">
+            <label class="form-label">저장소명 <span class="req">*</span></label>
+            <input class="form-input" id="ghRepo" type="text" placeholder="예: prompt-library">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">브랜치</label>
+          <input class="form-input" id="ghBranch" type="text" placeholder="main" value="main">
+        </div>
+      </div>
+
+      <div class="gh-section">
+        <div class="gh-section-title">인증 토큰</div>
+        <div class="form-group">
+          <label class="form-label">Personal Access Token <span class="req">*</span></label>
+          <div class="gh-token-wrap">
+            <input class="form-input" id="ghToken" type="password" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" autocomplete="off">
+            <button class="gh-eye" id="ghEye" onclick="toggleGhEye()">👁</button>
+          </div>
+          <div class="form-hint">
+            GitHub → Settings → Developer settings → Personal access tokens → <strong>repo</strong> 권한 필요
+          </div>
+        </div>
+      </div>
+
+      <div class="gh-section">
+        <div class="gh-section-title">동기화</div>
+        <div class="gh-status-row">
+          <div class="gh-last-sync" id="ghLastSync">마지막 동기화: 없음</div>
+          <button class="gh-sync-btn" id="ghSyncBtn" onclick="ghSync()" disabled>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><polyline points="23 20 23 14 17 14"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
+            지금 동기화
+          </button>
+        </div>
+        <div class="form-hint" id="ghSyncStatus">연동 설정 후 동기화할 수 있습니다.</div>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="ghDisconnect()">연동 해제</button>
+      <button class="btn-save" onclick="ghConnect()">연결하기</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── ADD / EDIT MODAL ── -->
+<div class="overlay" id="addModal">
+  <div class="modal" style="max-width:600px">
+    <div class="modal-hdr">
+      <div class="modal-title" id="addModalTitle">프롬프트 등록</div>
+      <button class="modal-x" onclick="closeModal('addModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">산출물 유형 <span class="req">*</span></label>
+          <select class="form-select" id="fCat" onchange="onCatChange(this.value)">
+            <option value="">선택하세요</option>
+            <option value="prd">PRD / 기획서</option>
+            <option value="ux">UX / 화면설계</option>
+            <option value="doc">보고서 / 문서</option>
+            <option value="dev">개발 / 코드</option>
+            <option value="data">데이터 분석</option>
+            <option value="mkt">마케팅 / 카피</option>
+            <option value="__custom__">✏️ 직접 입력</option>
+          </select>
+          <input class="form-input" id="fCatCustom" type="text" placeholder="예: 회의록, 제안서, 번역" style="display:none;margin-top:6px">
+        </div>
+        <div class="form-group">
+          <label class="form-label">프롬프트 제목 <span class="req">*</span></label>
+          <input class="form-input" id="fTitle" type="text" placeholder="예: 경쟁사 분석 PRD 초안 작성">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">프롬프트 내용 <span class="req">*</span></label>
+        <textarea class="form-textarea" id="fPrompt" placeholder="베스트 프롬프트를 입력하세요..."></textarea>
+        <div class="form-hint">실제로 효과가 좋았던 프롬프트를 그대로 붙여넣기 해주세요.</div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">사용 AI 도구</label>
+          <div class="chips" id="toolChips">
+            <div class="chip" onclick="this.classList.toggle('on')">Claude</div>
+            <div class="chip" onclick="this.classList.toggle('on')">Gemini</div>
+            <div class="chip" onclick="this.classList.toggle('on')">ChatGPT</div>
+            <div class="chip" onclick="this.classList.toggle('on')">Perplexity</div>
+            <div class="chip" onclick="this.classList.toggle('on')">Figma AI</div>
+            <div class="chip" onclick="this.classList.toggle('on')">Claude Code</div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">등록자</label>
+          <input class="form-input" id="fAuthor" type="text" placeholder="이름 또는 팀명">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">등록일자 <span class="req">*</span></label>
+          <input class="form-input" id="fDate" type="date">
+        </div>
+        <div class="form-group">
+          <label class="form-label">활용 팁 (선택)</label>
+          <input class="form-input" id="fTip" type="text" placeholder="예: 배경을 먼저 설명하면 더 좋아요">
+        </div>
+      </div>
+      <label class="star-row">
+        <input type="checkbox" id="fBest">
+        <div class="star-box"></div>
+        ⭐ BEST 프롬프트로 표시하기
+      </label>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('addModal')">취소</button>
+      <button class="btn-save" onclick="savePrompt()">저장하기</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── VIEW MODAL ── -->
+<div class="overlay" id="viewModal">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-hdr">
+      <div>
+        <div class="modal-title" id="vTitle"></div>
+        <div style="font-size:11px;color:var(--t3);margin-top:3px" id="vMeta"></div>
+      </div>
+      <button class="modal-x" onclick="closeModal('viewModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">프롬프트 내용</label>
+        <div class="view-prompt" id="vPrompt"></div>
+      </div>
+      <button class="copy-btn" onclick="doCopy()">📋 프롬프트 복사하기</button>
+      <div class="form-group" id="vTipWrap" style="display:none">
+        <label class="form-label">활용 팁</label>
+        <div style="font-size:13px;color:var(--t2);background:var(--s2);padding:10px 14px;border-radius:var(--rs);border-left:3px solid var(--gold)" id="vTip"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── API KEY MODAL ── -->
+<div class="overlay" id="keyModal">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-hdr">
+      <div class="modal-title">Claude API 키 설정</div>
+      <button class="modal-x" onclick="closeModal('keyModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="apikey-notice">
+        <strong>로컬 환경 전용 설정입니다.</strong><br>
+        API 키는 메모리에만 저장되며 새로고침하면 초기화됩니다.
+      </div>
+      <div class="form-group">
+        <label class="form-label">Anthropic API Key</label>
+        <div class="apikey-wrap">
+          <input class="form-input" id="keyInput" type="password" placeholder="sk-ant-api03-..." autocomplete="off">
+          <button class="apikey-eye" id="keyEye" onclick="toggleKeyVis()">👁</button>
+        </div>
+        <div class="form-hint">Anthropic Console → API Keys 에서 발급 받을 수 있어요.</div>
+      </div>
+      <div class="apikey-status">
+        <div class="apikey-dot" id="keyDot"></div>
+        <span id="keyStatusTxt" style="color:var(--t3)">API 키가 설정되지 않았습니다</span>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="clearKey()">키 초기화</button>
+      <button class="btn-save" onclick="saveKey()">저장하기</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── SHARE MODAL ── -->
+<div class="overlay" id="shareModal">
+  <div class="modal" style="max-width:460px">
+    <div class="modal-hdr">
+      <div class="modal-title">프롬프트 라이브러리 공유</div>
+      <button class="modal-x" onclick="closeModal('shareModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="share-list">
+        <div class="share-item" onclick="doShareHtml()">
+          <div class="share-icon si-blue">📥</div>
+          <div class="share-info">
+            <div class="share-title">HTML 파일 다운로드 후 공유</div>
+            <div class="share-desc">현재 프롬프트가 포함된 HTML 파일을 다운로드합니다.<br>팀원에게 전달하면 그대로 사용 가능해요.</div>
+          </div>
+          <div class="share-arr">↓</div>
+        </div>
+        <div class="share-item" onclick="doExportJson()">
+          <div class="share-icon si-green">📋</div>
+          <div class="share-info">
+            <div class="share-title">프롬프트 데이터 내보내기 (JSON)</div>
+            <div class="share-desc">프롬프트 목록만 JSON으로 추출합니다.<br>가져오기로 다른 앱에 병합할 수 있어요.</div>
+          </div>
+          <div class="share-arr">↗</div>
+        </div>
+        <div class="share-item" onclick="doImportJson()">
+          <div class="share-icon si-gold">📂</div>
+          <div class="share-info">
+            <div class="share-title">프롬프트 데이터 가져오기 (JSON)</div>
+            <div class="share-desc">팀원이 내보낸 JSON 파일을 불러옵니다.<br>기존 데이터에 병합되고 중복은 자동 제거됩니다.</div>
+          </div>
+          <div class="share-arr">↙</div>
+        </div>
+      </div>
+      <div class="share-notice">
+        💡 HTML 파일은 단독 실행 파일로 브라우저에서 바로 열 수 있습니다.<br>
+        Google Drive · Notion · Slack에 올려두고 팀과 공유하세요.
+      </div>
+      <input type="file" id="importInput" accept=".json" style="display:none" onchange="onImport(this)">
+    </div>
+  </div>
+</div>
+
+<!-- ── TOAST ── -->
+<div class="toast" id="toast">
+  <div class="toast-dot" id="toastDot"></div>
+  <span id="toastMsg"></span>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+// DATA & STATE
+// ═══════════════════════════════════════════════
+const BUILTIN = ['prd','ux','doc','dev','data','mkt'];
+const CAT_META = {
+  prd:  { label:'PRD / 기획서',   tc:'tag-prd',  icon:'📝' },
+  ux:   { label:'UX / 화면설계',  tc:'tag-ux',   icon:'🎨' },
+  doc:  { label:'보고서 / 문서',  tc:'tag-doc',  icon:'📄' },
+  dev:  { label:'개발 / 코드',    tc:'tag-dev',  icon:'💻' },
+  data: { label:'데이터 분석',    tc:'tag-data', icon:'📊' },
+  mkt:  { label:'마케팅 / 카피',  tc:'tag-mkt',  icon:'📣' },
+};
+const SEC_META = {
+  all:  ['📋 전체 프롬프트',    '모든 산출물 유형의 베스트 프롬프트'],
+  prd:  ['📝 PRD / 기획서',     '기획서·요구사항 문서 작성 프롬프트'],
+  ux:   ['🎨 UX / 화면설계',    'IA·와이어프레임·화면명세서 작성 프롬프트'],
+  doc:  ['📄 보고서 / 문서',    '착수보고서·결과보고서·회의록 작성 프롬프트'],
+  dev:  ['💻 개발 / 코드',      '코드 생성·리뷰·리팩토링 프롬프트'],
+  data: ['📊 데이터 분석',      '데이터 분석·시각화·인사이트 도출 프롬프트'],
+  mkt:  ['📣 마케팅 / 카피',    '카피라이팅·SNS·광고 소재 프롬프트'],
+  best: ['⭐ BEST 프롬프트',    '팀에서 가장 효과가 좋았던 프롬프트 모음'],
+};
+
+let prompts = [];
+let curCat = 'all';
+let curSearch = '';
+let editId = null;
+let viewId = null;
+let apiKey = '';
+let searchTimer = null;
+
+// ── 초기 데이터 로드 ──────────────────────────
+function loadData() {
+  try { prompts = JSON.parse(localStorage.getItem('vc-prompts') || '[]'); } catch(e) { prompts = []; }
+  if (prompts.length === 0) {
+    prompts = [
+      { id:1, cat:'prd', title:'경쟁사 분석 기반 PRD 초안 작성', prompt:'다음 서비스의 PRD를 작성해줘.\n\n[서비스명]: {서비스명}\n[배경]: {배경}\n[타겟 사용자]: {사용자}\n\n아래 구조로 작성해줘:\n1. 배경 및 목적\n2. 핵심 사용자 문제\n3. 솔루션 개요\n4. 핵심 기능 (MoSCoW 우선순위)\n5. 비기능 요구사항\n6. 성공 지표 (KPI)', tools:['Claude'], author:'이수철', tip:'배경과 타겟 사용자를 구체적으로 입력할수록 완성도가 높아져요.', best:true, copies:24, date:'2026.04.15' },
+      { id:2, cat:'ux',  title:'IA 구조 자동 설계 프롬프트', prompt:'아래 PRD를 기반으로 정보 구조(IA)를 설계해줘.\n\n[PRD 내용]: {PRD 붙여넣기}\n\n다음 형식으로 작성:\n- Depth 1 (GNB)\n- Depth 2 (섹션)\n- Depth 3 (상세 화면)\n- 각 화면의 주요 컴포넌트', tools:['Claude'], author:'이고은', tip:'PRD 전문을 붙여넣으면 훨씬 정교한 IA가 나와요.', best:true, copies:18, date:'2026.04.16' },
+      { id:3, cat:'doc', title:'바이널씨 스타일 보고서 변환', prompt:'Vinylc_Report_Template.md 파일을 참고해서 바이널씨 스타일로 착수보고서를 만들꺼야\n내가 참고할 착수보고서 초안을 보내줄께\n해당 문서를 바이널씨 스타일로 변경하고 내용도 고도화 해줘', tools:['Claude'], author:'유경구', tip:'Vinylc_Report_Template.md와 원본 PPTX를 함께 업로드하세요.', best:true, copies:31, date:'2026.04.21' },
+      { id:4, cat:'dev', title:'React 컴포넌트 코드 리뷰', prompt:'아래 React 컴포넌트를 코드 리뷰해줘.\n\n[코드]: {코드 붙여넣기}\n\n검토 기준:\n1. 성능 이슈\n2. 접근성 (aria, semantic HTML)\n3. 코드 가독성\n4. 잠재적 버그\n5. 개선 제안 (코드 예시 포함)', tools:['Claude','Claude Code'], author:'개발팀', tip:'컴포넌트 전체 코드를 붙여넣을수록 정확한 리뷰가 나와요.', best:false, copies:9, date:'2026.04.17' },
+      { id:5, cat:'data',title:'사용자 리뷰 감성 분석 요약', prompt:'아래 사용자 리뷰 데이터를 분석해줘.\n\n[리뷰 데이터]: {데이터 붙여넣기}\n\n결과 형식:\n1. 긍정 키워드 Top 10\n2. 부정 키워드 Top 10\n3. 카테고리별 감성 점수\n4. 개선 우선순위 제안\n5. 경영진 보고용 3줄 요약', tools:['Claude','Gemini'], author:'데이터팀', tip:'CSV나 텍스트로 리뷰를 붙여넣으면 바로 분석해줘요.', best:false, copies:7, date:'2026.04.18' },
+    ];
+    saveData();
+  }
+}
+
+function saveData() {
+  localStorage.setItem('vc-prompts', JSON.stringify(prompts));
+}
+
+// ── 커스텀 카테고리 로드 ──────────────────────
+function loadCustomCats() {
+  let cats = [];
+  try { cats = JSON.parse(localStorage.getItem('vc-cats') || '[]'); } catch(e) {}
+  cats.forEach(function(cat) {
+    if (!CAT_META[cat]) registerCat(cat);
+  });
+}
+
+function saveCustomCats() {
+  var cats = Object.keys(CAT_META).filter(function(c) { return !BUILTIN.includes(c); });
+  localStorage.setItem('vc-cats', JSON.stringify(cats));
+}
+
+function registerCat(cat) {
+  if (CAT_META[cat]) return;
+  CAT_META[cat] = { label:cat, tc:'tag-custom', icon:'🗂️' };
+  SEC_META[cat] = ['🗂️ ' + cat, cat + ' 관련 프롬프트'];
+  renderCatBtn(cat);
+  addCatToSelect(cat);
+}
+
+function renderCatBtn(cat) {
+  if (document.querySelector('[data-cat="' + cat + '"]')) return;
+  var el = document.createElement('button');
+  el.className = 'cat-btn';
+  el.dataset.cat = cat;
+  el.innerHTML = '<span class="cat-icon">🗂️</span> ' + escHtml(cat) +
+    ' <span class="cat-cnt" id="cnt-' + cat + '">0</span>' +
+    '<button class="cat-del" title="삭제" onclick="delCat(event,\'' + cat + '\')">✕</button>';
+  el.onclick = function(e) {
+    if (e.target.classList.contains('cat-del')) return;
+    filterCat(cat, el);
+  };
+  document.getElementById('customCats').appendChild(el);
+}
+
+function addCatToSelect(cat) {
+  var sel = document.getElementById('fCat');
+  if (Array.from(sel.options).some(function(o) { return o.value === cat; })) return;
+  var opt = document.createElement('option');
+  opt.value = cat; opt.textContent = cat;
+  sel.insertBefore(opt, sel.querySelector('[value="__custom__"]'));
+}
+
+// ═══════════════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════════════
+function updateCounts() {
+  var cnt = {};
+  prompts.forEach(function(p) { cnt[p.cat] = (cnt[p.cat] || 0) + 1; });
+  document.getElementById('totalCount').textContent = prompts.length;
+  document.getElementById('cnt-all').textContent = prompts.length;
+  document.getElementById('cnt-best').textContent = prompts.filter(function(p) { return p.best; }).length;
+  Object.keys(CAT_META).forEach(function(c) {
+    var el = document.getElementById('cnt-' + c);
+    if (el) el.textContent = cnt[c] || 0;
+  });
+}
+
+function getFilteredList() {
+  var list = prompts.slice();
+  if (curCat === 'best') list = list.filter(function(p) { return p.best; });
+  else if (curCat !== 'all') list = list.filter(function(p) { return p.cat === curCat; });
+  if (curSearch) {
+    var q = curSearch.toLowerCase();
+    list = list.filter(function(p) {
+      return p.title.toLowerCase().includes(q) ||
+             p.prompt.toLowerCase().includes(q) ||
+             (p.tip || '').toLowerCase().includes(q);
+    });
+  }
+  return list;
+}
+
+function render() {
+  updateCounts();
+  var list = getFilteredList();
+  var grid = document.getElementById('cardGrid');
+  if (list.length === 0) {
+    grid.innerHTML = '<div class="empty"><div class="empty-icon">🔍</div><div class="empty-title">프롬프트가 없어요</div><div>새 프롬프트를 등록해보세요!</div></div>';
+    return;
+  }
+  var html = '';
+  list.forEach(function(p) {
+    var cm = CAT_META[p.cat] || { label:p.cat, tc:'tag-custom', icon:'🗂️' };
+    var tools = (p.tools || []).map(function(t) { return '<span class="tool-badge">' + escHtml(t) + '</span>'; }).join('');
+    html += '<div class="prompt-card' + (p.best ? ' featured' : '') + '" onclick="openView(' + p.id + ')">';
+    html += '<div class="card-top">';
+    html += '<span class="card-tag ' + cm.tc + '">' + cm.icon + ' ' + escHtml(cm.label) + '</span>';
+    html += '<div class="card-actions" onclick="event.stopPropagation()">';
+    html += '<button class="icon-btn" title="수정" onclick="openEdit(' + p.id + ')">✏️</button>';
+    html += '<button class="icon-btn" title="삭제" onclick="delPrompt(' + p.id + ')">🗑️</button>';
+    html += '</div></div>';
+    html += '<div class="card-title">' + escHtml(p.title) + '</div>';
+    html += '<div class="card-prompt">' + escHtml(p.prompt) + '</div>';
+    html += '<div class="card-meta"><div class="card-tools">' + tools + '</div>';
+    html += '<div>📋 ' + (p.copies || 0) + '회</div></div>';
+    if (p.date) html += '<div class="card-date">' + escHtml(p.date) + '</div>';
+    html += '</div>';
+  });
+  grid.innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════
+// CATEGORY ACTIONS
+// ═══════════════════════════════════════════════
+function filterCat(cat, el) {
+  curCat = cat;
+  document.querySelectorAll('.cat-btn').forEach(function(b) { b.classList.remove('active'); });
+  el.classList.add('active');
+  var meta = SEC_META[cat] || ['🗂️ ' + cat, cat + ' 관련 프롬프트'];
+  document.getElementById('secTitle').textContent = meta[0];
+  document.getElementById('secSub').textContent = meta[1];
+  render();
+}
+
+function addCat() {
+  var input = document.getElementById('newCatInput');
+  var cat = input.value.trim();
+  if (!cat) return;
+  if (CAT_META[cat] || ['all','best'].includes(cat)) { toast('이미 있는 유형이에요.', false); return; }
+  registerCat(cat);
+  saveCustomCats();
+  input.value = '';
+  toast("'" + cat + "' 카테고리 추가됨");
+  render();
+}
+
+function delCat(e, cat) {
+  e.stopPropagation();
+  var n = prompts.filter(function(p) { return p.cat === cat; }).length;
+  if (n > 0 && !confirm("'" + cat + "' 유형의 프롬프트 " + n + "개가 있어요.\n카테고리만 삭제할까요? (프롬프트는 유지됩니다)")) return;
+  var btn = document.querySelector('[data-cat="' + cat + '"]');
+  if (btn) btn.remove();
+  var opt = document.querySelector('#fCat [value="' + cat + '"]');
+  if (opt) opt.remove();
+  delete CAT_META[cat];
+  delete SEC_META[cat];
+  saveCustomCats();
+  if (curCat === cat) filterCat('all', document.querySelector('[data-cat="all"]'));
+  toast("'" + cat + "' 카테고리 삭제됨");
+  render();
+}
+
+// ═══════════════════════════════════════════════
+// SEARCH
+// ═══════════════════════════════════════════════
+function onSearch(val) {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(function() { curSearch = val; render(); }, 180);
+}
+
+// ═══════════════════════════════════════════════
+// ADD / EDIT MODAL
+// ═══════════════════════════════════════════════
+function openAddModal() {
+  editId = null;
+  document.getElementById('addModalTitle').textContent = '프롬프트 등록';
+  document.getElementById('fCat').value = '';
+  document.getElementById('fCatCustom').value = '';
+  document.getElementById('fCatCustom').style.display = 'none';
+  document.getElementById('fTitle').value = '';
+  document.getElementById('fPrompt').value = '';
+  document.getElementById('fAuthor').value = '';
+  document.getElementById('fTip').value = '';
+  document.getElementById('fDate').value = new Date().toISOString().slice(0, 10);
+  document.getElementById('fBest').checked = false;
+  document.querySelectorAll('#toolChips .chip').forEach(function(c) { c.classList.remove('on'); });
+  openModal('addModal');
+}
+
+function openEdit(id) {
+  var p = prompts.find(function(x) { return x.id === id; });
+  if (!p) return;
+  editId = id;
+  document.getElementById('addModalTitle').textContent = '프롬프트 수정';
+  var isCustom = !BUILTIN.includes(p.cat);
+  var sel = document.getElementById('fCat');
+  var cust = document.getElementById('fCatCustom');
+  if (isCustom) {
+    sel.value = '__custom__';
+    cust.style.display = 'block';
+    cust.value = p.cat;
+  } else {
+    sel.value = p.cat;
+    cust.style.display = 'none';
+    cust.value = '';
+  }
+  document.getElementById('fTitle').value = p.title;
+  document.getElementById('fPrompt').value = p.prompt;
+  document.getElementById('fAuthor').value = p.author || '';
+  document.getElementById('fTip').value = p.tip || '';
+  document.getElementById('fDate').value = (p.date || '').replace(/\./g, '-');
+  document.getElementById('fBest').checked = !!p.best;
+  document.querySelectorAll('#toolChips .chip').forEach(function(c) {
+    c.classList.toggle('on', (p.tools || []).includes(c.textContent));
+  });
+  openModal('addModal');
+}
+
+function onCatChange(val) {
+  var cust = document.getElementById('fCatCustom');
+  cust.style.display = val === '__custom__' ? 'block' : 'none';
+  if (val !== '__custom__') cust.value = '';
+}
+
+function savePrompt() {
+  var catVal = document.getElementById('fCat').value;
+  if (catVal === '__custom__') {
+    catVal = document.getElementById('fCatCustom').value.trim();
+    if (!catVal) { toast('직접 입력 유형명을 입력해주세요.', false); return; }
+  }
+  var title = document.getElementById('fTitle').value.trim();
+  var prompt = document.getElementById('fPrompt').value.trim();
+  if (!catVal || !title || !prompt) { toast('산출물 유형, 제목, 프롬프트는 필수입니다.', false); return; }
+  if (!CAT_META[catVal]) { registerCat(catVal); saveCustomCats(); }
+  var tools = Array.from(document.querySelectorAll('#toolChips .chip.on')).map(function(c) { return c.textContent; });
+  var dateVal = document.getElementById('fDate').value;
+  var data = {
+    cat: catVal,
+    title: title,
+    prompt: prompt,
+    tools: tools,
+    author: document.getElementById('fAuthor').value.trim(),
+    tip: document.getElementById('fTip').value.trim(),
+    best: document.getElementById('fBest').checked,
+    copies: 0,
+    date: dateVal ? dateVal.replace(/-/g, '.') : '',
+  };
+  if (editId) {
+    var idx = prompts.findIndex(function(x) { return x.id === editId; });
+    data.id = editId;
+    data.copies = prompts[idx].copies || 0;
+    prompts[idx] = data;
+    toast('프롬프트가 수정되었습니다.');
+  } else {
+    data.id = Date.now();
+    prompts.unshift(data);
+    toast('프롬프트가 등록되었습니다.');
+  }
+  saveData();
+  closeModal('addModal');
+  render();
+}
+
+function delPrompt(id) {
+  if (!confirm('이 프롬프트를 삭제할까요?')) return;
+  prompts = prompts.filter(function(x) { return x.id !== id; });
+  saveData();
+  render();
+  toast('삭제되었습니다.');
+}
+
+// ═══════════════════════════════════════════════
+// VIEW MODAL
+// ═══════════════════════════════════════════════
+function openView(id) {
+  var p = prompts.find(function(x) { return x.id === id; });
+  if (!p) return;
+  viewId = id;
+  var cm = CAT_META[p.cat] || { label:p.cat };
+  document.getElementById('vTitle').textContent = p.title;
+  document.getElementById('vMeta').textContent =
+    [cm.label, (p.tools||[]).join(', '), p.author, p.date].filter(Boolean).join('  ·  ');
+  document.getElementById('vPrompt').textContent = p.prompt;
+  var tw = document.getElementById('vTipWrap');
+  if (p.tip) {
+    tw.style.display = '';
+    document.getElementById('vTip').textContent = p.tip;
+  } else {
+    tw.style.display = 'none';
+  }
+  openModal('viewModal');
+}
+
+function doCopy() {
+  var p = prompts.find(function(x) { return x.id === viewId; });
+  if (!p) return;
+  navigator.clipboard.writeText(p.prompt).then(function() {
+    p.copies = (p.copies || 0) + 1;
+    saveData();
+    toast('클립보드에 복사되었습니다!');
+    closeModal('viewModal');
+    render();
+  }).catch(function() {
+    toast('복사 실패 — 텍스트를 직접 선택해주세요.', false);
+  });
+}
+
+// ═══════════════════════════════════════════════
+// API KEY
+// ═══════════════════════════════════════════════
+function saveKey() {
+  var val = document.getElementById('keyInput').value.trim();
+  if (!val || val.startsWith('•')) { toast('API 키를 입력해주세요.', false); return; }
+  if (!val.startsWith('sk-ant-')) { toast('올바른 Anthropic API 키 형식이 아닙니다.', false); return; }
+  apiKey = val;
+  updateKeyStatus();
+  closeModal('keyModal');
+  toast('API 키가 설정되었습니다.');
+}
+
+function clearKey() {
+  apiKey = '';
+  document.getElementById('keyInput').value = '';
+  updateKeyStatus();
+  closeModal('keyModal');
+  toast('API 키가 초기화되었습니다.');
+}
+
+function toggleKeyVis() {
+  var inp = document.getElementById('keyInput');
+  var eye = document.getElementById('keyEye');
+  if (inp.type === 'password') { inp.type = 'text'; eye.textContent = '🙈'; }
+  else { inp.type = 'password'; eye.textContent = '👁'; }
+}
+
+function updateKeyStatus() {
+  var dot = document.getElementById('keyDot');
+  var txt = document.getElementById('keyStatusTxt');
+  var btn = document.getElementById('btnKey');
+  var lbl = document.getElementById('keyLabel');
+  if (apiKey) {
+    dot.classList.add('set');
+    txt.style.color = 'var(--green)';
+    txt.textContent = '설정됨 · ...' + apiKey.slice(-4);
+    btn.classList.add('set');
+    lbl.textContent = '키 설정됨 ✓';
+  } else {
+    dot.classList.remove('set');
+    txt.style.color = 'var(--t3)';
+    txt.textContent = 'API 키가 설정되지 않았습니다';
+    btn.classList.remove('set');
+    lbl.textContent = 'API 키 설정';
+  }
+}
+
+// ═══════════════════════════════════════════════
+// AI 추천
+// ═══════════════════════════════════════════════
+async function openAi() {
+  var panel = document.getElementById('aiPanel');
+  var body = document.getElementById('aiBody');
+  var btn = document.getElementById('btnAi');
+  var lbl = document.getElementById('aiCatLabel');
+  var list = getFilteredList();
+
+  if (list.length === 0) { toast('추천할 프롬프트가 없어요.', false); return; }
+
+  if (!apiKey) {
+    panel.classList.add('open');
+    body.innerHTML = '<div style="text-align:center;padding:28px 20px">' +
+      '<div style="font-size:28px;margin-bottom:10px">🔑</div>' +
+      '<div style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:6px">API 키가 필요해요</div>' +
+      '<div style="font-size:12px;color:var(--t3);margin-bottom:16px">로컬 환경에서 AI 추천을 사용하려면<br>Anthropic API 키를 먼저 설정해주세요.</div>' +
+      '<button onclick="closeAi();openModal(\'keyModal\')" style="background:var(--mag);border:none;border-radius:6px;padding:9px 20px;font-family:inherit;font-size:13px;font-weight:600;color:#fff;cursor:pointer">API 키 설정하기</button>' +
+      '</div>';
+    return;
+  }
+
+  var catName = curCat === 'all' ? '전체' : (CAT_META[curCat] ? CAT_META[curCat].label : curCat);
+  lbl.textContent = '— ' + catName;
+  panel.classList.add('open');
+  btn.classList.add('loading');
+  btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg> 분석 중...';
+
+  body.innerHTML = '<div class="skel-list">' +
+    [1,2,3].map(function() {
+      return '<div class="skel-card"><div class="skel-line" style="width:30%"></div><div class="skel-line" style="width:80%"></div><div class="skel-line" style="width:60%"></div></div>';
+    }).join('') + '</div>';
+
+  var sample = list.slice(0, 20).map(function(p, i) {
+    return '[' + (i+1) + '] 제목: ' + p.title + '\n유형: ' + (CAT_META[p.cat] ? CAT_META[p.cat].label : p.cat) + '\n내용: ' + p.prompt.slice(0, 200) + (p.prompt.length > 200 ? '...' : '') + '\n복사횟수: ' + (p.copies || 0) + '회';
+  }).join('\n\n---\n\n');
+
+  try {
+    var res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{
+          role: 'user',
+          content: '다음은 팀 직원들이 업무에 활용하는 AI 프롬프트 목록입니다.\n\n' + sample + '\n\n위 프롬프트 중에서 실무 활용도, 구체성, 재사용 가능성을 기준으로 베스트 3개를 선정해주세요.\n\n반드시 아래 JSON 형식으로만 응답하세요. 다른 텍스트 없이 JSON만:\n{"recommendations":[{"rank":1,"index":1,"title":"제목","score":9,"reason":"추천 이유 2문장"},{"rank":2,"index":2,"title":"제목","score":8,"reason":"추천 이유 2문장"},{"rank":3,"index":3,"title":"제목","score":7,"reason":"추천 이유 2문장"}]}'
+        }]
+      })
+    });
+
+    var data = await res.json();
+    if (data.error) throw new Error(data.error.message || 'API 오류');
+    var raw = (data.content || []).find(function(b) { return b.type === 'text'; });
+    if (!raw) throw new Error('응답을 받지 못했습니다.');
+    var clean = raw.text.replace(/```json|```/g, '').trim();
+    var parsed = JSON.parse(clean);
+    var recs = parsed.recommendations;
+    var rankLabel = ['🥇 1위', '🥈 2위', '🥉 3위'];
+    var rankCls = ['rank-1', 'rank-2', 'rank-3'];
+
+    var html = '<div class="ai-rec-list">';
+    recs.forEach(function(r, i) {
+      var orig = list[r.index - 1];
+      var oid = orig ? orig.id : null;
+      html += '<div class="ai-rec-card"' + (oid ? ' onclick="openView(' + oid + ')"' : '') + '>';
+      html += '<div class="ai-rank ' + (rankCls[i]||'rank-3') + '">' + (rankLabel[i]||'') + '</div>';
+      html += '<div class="ai-rec-title">' + escHtml(r.title) + '</div>';
+      html += '<div class="ai-rec-reason">' + escHtml(r.reason) + '</div>';
+      html += '<div class="ai-rec-meta">';
+      html += '<div class="ai-score"><svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg> ' + r.score + '/10</div>';
+      if (orig) {
+        html += '<span>·</span><span>' + escHtml(CAT_META[orig.cat] ? CAT_META[orig.cat].label : orig.cat) + '</span>';
+        html += '<span>·</span><span>복사 ' + (orig.copies || 0) + '회</span>';
+      }
+      html += '</div></div>';
+    });
+    html += '</div><div style="margin-top:12px;font-size:11px;color:var(--t3);text-align:right">Claude AI 분석 결과 · 카드를 클릭하면 프롬프트 전문을 볼 수 있어요</div>';
+    body.innerHTML = html;
+
+  } catch(e) {
+    body.innerHTML = '<div style="text-align:center;padding:24px;color:var(--t3);font-size:13px">분석 중 오류가 발생했습니다.<br><span style="font-size:11px">' + escHtml(e.message) + '</span></div>';
+  }
+
+  btn.classList.remove('loading');
+  btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg> AI 추천';
+}
+
+function closeAi() {
+  document.getElementById('aiPanel').classList.remove('open');
+}
+
+// ═══════════════════════════════════════════════
+// SHARE
+// ═══════════════════════════════════════════════
+function doShareHtml() {
+  try {
+    var src = document.documentElement.outerHTML;
+    // 시드 데이터를 현재 데이터로 교체
+    src = src.replace(
+      /prompts = \[\];[\s\S]*?loadData\(\);/,
+      "prompts = " + JSON.stringify(prompts) + ";\nsaveData();"
+    );
+    // 혹시 위 패턴이 없으면 vc-prompts 데이터 직접 주입
+    if (src.indexOf(JSON.stringify(prompts)) === -1) {
+      src = src.replace(
+        "localStorage.setItem('vc-prompts',",
+        "localStorage.setItem('vc-prompts-init', JSON.stringify(" + JSON.stringify(prompts) + "));\nlocalStorage.setItem('vc-prompts',"
+      );
+    }
+    var blob = new Blob([src], { type: 'text/html;charset=utf-8' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = '베스트프롬프트_' + new Date().toLocaleDateString('ko-KR').replace(/\. /g, '-').replace('.', '') + '.html';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(a.href);
+    closeModal('shareModal');
+    toast('HTML 파일 다운로드 완료! 팀원에게 공유하세요.');
+  } catch(e) {
+    toast('다운로드 중 오류: ' + e.message, false);
+  }
+}
+
+function doExportJson() {
+  try {
+    var customCats = Object.keys(CAT_META).filter(function(c) { return !BUILTIN.includes(c); });
+    var data = { version: 1, exported: new Date().toISOString(), prompts: prompts, customCats: customCats };
+    var blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = '프롬프트_' + new Date().toLocaleDateString('ko-KR').replace(/\. /g, '-').replace('.', '') + '.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(a.href);
+    closeModal('shareModal');
+    toast('JSON 내보내기 완료!');
+  } catch(e) {
+    toast('내보내기 오류: ' + e.message, false);
+  }
+}
+
+function doImportJson() {
+  document.getElementById('importInput').value = '';
+  document.getElementById('importInput').click();
+}
+
+function onImport(input) {
+  var file = input.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      var data = JSON.parse(e.target.result);
+      var imported = Array.isArray(data) ? data : (data.prompts || []);
+      if (!Array.isArray(imported)) throw new Error('올바른 형식이 아닙니다.');
+      var existIds = new Set(prompts.map(function(p) { return p.id; }));
+      var newItems = imported.filter(function(p) { return !existIds.has(p.id); });
+      prompts = prompts.concat(newItems);
+      saveData();
+      if (data.customCats && Array.isArray(data.customCats)) {
+        data.customCats.forEach(function(cat) { if (!CAT_META[cat]) { registerCat(cat); } });
+        saveCustomCats();
+      }
+      render();
+      closeModal('shareModal');
+      toast(newItems.length + '개 프롬프트를 가져왔습니다!');
+    } catch(err) {
+      toast('파일 읽기 오류: ' + err.message, false);
+    }
+    input.value = '';
+  };
+  reader.readAsText(file);
+}
+
+// ═══════════════════════════════════════════════
+// MODAL HELPERS
+// ═══════════════════════════════════════════════
+function openModal(id) {
+  document.getElementById(id).classList.add('open');
+}
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+
+// overlay 클릭으로 닫기
+document.querySelectorAll('.overlay').forEach(function(el) {
+  el.addEventListener('click', function(e) {
+    if (e.target === el) el.classList.remove('open');
+  });
+});
+
+// ── ESC / Ctrl+Enter ──────────────────────────
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    ['addModal','viewModal','keyModal','shareModal','ghModal'].forEach(function(id) {
+      closeModal(id);
+    });
+    closeAi();
+  }
+  if (e.key === 'Enter' && e.ctrlKey) {
+    if (document.getElementById('addModal').classList.contains('open')) savePrompt();
+  }
+});
+
+// ═══════════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════════
+var toastTimer = null;
+function toast(msg, ok) {
+  if (ok === undefined) ok = true;
+  document.getElementById('toastDot').style.background = ok ? 'var(--green)' : '#E07070';
+  document.getElementById('toastMsg').textContent = msg;
+  var t = document.getElementById('toast');
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function() { t.classList.remove('show'); }, 2400);
+}
+
+// ═══════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════
+function escHtml(str) {
+  return String(str)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#39;');
+}
+
+
+// ═══════════════════════════════════════════════
+// GITHUB API — DB 연동
+// ═══════════════════════════════════════════════
+var GH = {
+  user: '', repo: '', branch: 'main', token: '',
+  filePath: 'data/prompts.json',
+  sha: '',       // 파일 현재 SHA (덮어쓰기에 필요)
+  lastSync: null,
+  connected: false
+};
+
+// ── 설정 저장/로드 ────────────────────────────
+function ghLoadConfig() {
+  try {
+    var cfg = JSON.parse(localStorage.getItem('vc-gh-config') || '{}');
+    GH.user   = cfg.user   || '';
+    GH.repo   = cfg.repo   || '';
+    GH.branch = cfg.branch || 'main';
+    GH.token  = cfg.token  || '';
+    GH.lastSync = cfg.lastSync || null;
+    GH.connected = !!(GH.user && GH.repo && GH.token);
+  } catch(e) {}
+}
+
+function ghSaveConfig() {
+  localStorage.setItem('vc-gh-config', JSON.stringify({
+    user: GH.user, repo: GH.repo, branch: GH.branch,
+    token: GH.token, lastSync: GH.lastSync
+  }));
+}
+
+// ── 헤더 배지 업데이트 ────────────────────────
+function ghUpdateBadge(state) {
+  // state: 'disconnected' | 'connected' | 'syncing' | 'error'
+  var badge = document.getElementById('ghBadge');
+  var label = document.getElementById('ghBadgeLabel');
+  badge.className = 'gh-badge';
+  if (state === 'connected') {
+    badge.classList.add('connected');
+    label.textContent = GH.user + '/' + GH.repo;
+  } else if (state === 'syncing') {
+    badge.classList.add('syncing');
+    label.textContent = '동기화 중...';
+  } else if (state === 'error') {
+    badge.classList.add('error');
+    label.textContent = '연동 오류';
+  } else {
+    label.textContent = 'GitHub 연동';
+  }
+}
+
+// ── API 공통 헤더 ─────────────────────────────
+function ghHeaders() {
+  return {
+    'Authorization': 'token ' + GH.token,
+    'Content-Type': 'application/json',
+    'Accept': 'application/vnd.github.v3+json'
+  };
+}
+
+function ghApiUrl(path) {
+  return 'https://api.github.com/repos/' + GH.user + '/' + GH.repo + path;
+}
+
+// ── READ: GitHub에서 데이터 불러오기 ──────────
+async function ghRead() {
+  var res = await fetch(ghApiUrl('/contents/' + GH.filePath + '?ref=' + GH.branch), {
+    headers: ghHeaders()
+  });
+  if (res.status === 404) {
+    // 파일 없으면 빈 데이터로 시작
+    GH.sha = '';
+    return { prompts: [], customCats: [] };
+  }
+  if (!res.ok) {
+    var err = await res.json();
+    throw new Error(err.message || 'GitHub READ 오류 (' + res.status + ')');
+  }
+  var file = await res.json();
+  GH.sha = file.sha;
+  var decoded = decodeURIComponent(escape(atob(file.content.replace(/\n/g, ''))));
+  return JSON.parse(decoded);
+}
+
+// ── WRITE: GitHub에 데이터 저장 ───────────────
+async function ghWrite(data) {
+  var content = btoa(unescape(encodeURIComponent(JSON.stringify(data, null, 2))));
+  var body = {
+    message: 'Update prompts [' + new Date().toISOString().slice(0,19) + ']',
+    content: content,
+    branch: GH.branch
+  };
+  if (GH.sha) body.sha = GH.sha;  // 기존 파일 업데이트 시 sha 필요
+  var res = await fetch(ghApiUrl('/contents/' + GH.filePath), {
+    method: 'PUT',
+    headers: ghHeaders(),
+    body: JSON.stringify(body)
+  });
+  if (!res.ok) {
+    var err = await res.json();
+    throw new Error(err.message || 'GitHub WRITE 오류 (' + res.status + ')');
+  }
+  var result = await res.json();
+  GH.sha = result.content.sha;  // 새 SHA 업데이트
+}
+
+// ── 연결하기 ──────────────────────────────────
+async function ghConnect() {
+  var user   = document.getElementById('ghUser').value.trim();
+  var repo   = document.getElementById('ghRepo').value.trim();
+  var branch = document.getElementById('ghBranch').value.trim() || 'main';
+  var token  = document.getElementById('ghToken').value.trim();
+
+  if (!user || !repo || !token) {
+    toast('사용자명, 저장소명, 토큰은 필수입니다.', false); return;
+  }
+
+  GH.user = user; GH.repo = repo; GH.branch = branch; GH.token = token;
+  ghUpdateBadge('syncing');
+  document.getElementById('ghSyncStatus').textContent = '연결 확인 중...';
+
+  try {
+    // 저장소 접근 확인
+    var repoRes = await fetch(ghApiUrl(''), { headers: ghHeaders() });
+    if (!repoRes.ok) throw new Error('저장소에 접근할 수 없습니다. 사용자명/저장소명/토큰을 확인하세요.');
+
+    // data 디렉토리 및 파일 확인 → 없으면 자동 생성
+    var data = await ghRead();
+
+    // GitHub 데이터가 있으면 로컬과 병합
+    if (data.prompts && data.prompts.length > 0) {
+      var existIds = new Set(prompts.map(function(p) { return p.id; }));
+      var merged = prompts.concat(data.prompts.filter(function(p) { return !existIds.has(p.id); }));
+      prompts = merged;
+      saveData();
+      if (data.customCats) {
+        data.customCats.forEach(function(cat) { if (!CAT_META[cat]) registerCat(cat); });
+        saveCustomCats();
+      }
+      render();
+    } else {
+      // 처음 연동 — 로컬 데이터를 GitHub에 업로드
+      var customCats = Object.keys(CAT_META).filter(function(c) { return !BUILTIN.includes(c); });
+      await ghWrite({ prompts: prompts, customCats: customCats });
+    }
+
+    GH.connected = true;
+    GH.lastSync = new Date().toISOString();
+    ghSaveConfig();
+    ghUpdateBadge('connected');
+    ghUpdateModalStatus();
+    closeModal('ghModal');
+    toast('GitHub 연동 완료! 데이터가 동기화되었습니다.');
+  } catch(e) {
+    GH.connected = false;
+    ghUpdateBadge('error');
+    document.getElementById('ghSyncStatus').textContent = '오류: ' + e.message;
+    toast('연동 실패: ' + e.message, false);
+  }
+}
+
+// ── 지금 동기화 (Pull + Push) ─────────────────
+async function ghSync() {
+  if (!GH.connected) return;
+  ghUpdateBadge('syncing');
+  document.getElementById('ghSyncBtn').disabled = true;
+  document.getElementById('ghSyncStatus').textContent = '동기화 중...';
+
+  try {
+    // 1) GitHub에서 최신 데이터 읽기
+    var remote = await ghRead();
+    var remoteIds = new Set((remote.prompts || []).map(function(p) { return p.id; }));
+    var localIds  = new Set(prompts.map(function(p) { return p.id; }));
+
+    // 2) 병합: 로컬 + 원격 (중복 제거, 로컬 우선)
+    var merged = prompts.slice();
+    (remote.prompts || []).forEach(function(p) {
+      if (!localIds.has(p.id)) merged.push(p);
+    });
+
+    // 3) 원격 카테고리 병합
+    if (remote.customCats) {
+      remote.customCats.forEach(function(cat) {
+        if (!CAT_META[cat]) registerCat(cat);
+      });
+      saveCustomCats();
+    }
+
+    prompts = merged;
+    saveData();
+
+    // 4) 병합된 데이터 GitHub에 저장
+    var customCats = Object.keys(CAT_META).filter(function(c) { return !BUILTIN.includes(c); });
+    await ghWrite({ prompts: prompts, customCats: customCats });
+
+    GH.lastSync = new Date().toISOString();
+    ghSaveConfig();
+    ghUpdateBadge('connected');
+    ghUpdateModalStatus();
+    render();
+    toast('동기화 완료!');
+  } catch(e) {
+    ghUpdateBadge('error');
+    document.getElementById('ghSyncStatus').textContent = '오류: ' + e.message;
+    toast('동기화 실패: ' + e.message, false);
+  }
+  document.getElementById('ghSyncBtn').disabled = false;
+}
+
+// ── 연동 해제 ─────────────────────────────────
+function ghDisconnect() {
+  if (!confirm('GitHub 연동을 해제할까요?\n로컬 데이터는 유지됩니다.')) return;
+  GH.user = ''; GH.repo = ''; GH.token = ''; GH.connected = false; GH.sha = '';
+  localStorage.removeItem('vc-gh-config');
+  ghUpdateBadge('disconnected');
+  ghUpdateModalStatus();
+  closeModal('ghModal');
+  toast('GitHub 연동이 해제되었습니다.');
+}
+
+// ── 모달 UI 상태 업데이트 ─────────────────────
+function ghUpdateModalStatus() {
+  document.getElementById('ghUser').value   = GH.user;
+  document.getElementById('ghRepo').value   = GH.repo;
+  document.getElementById('ghBranch').value = GH.branch || 'main';
+  document.getElementById('ghToken').value  = GH.token ? '•'.repeat(20) : '';
+  var syncBtn = document.getElementById('ghSyncBtn');
+  syncBtn.disabled = !GH.connected;
+  var lastSync = document.getElementById('ghLastSync');
+  lastSync.textContent = GH.lastSync
+    ? '마지막 동기화: ' + new Date(GH.lastSync).toLocaleString('ko-KR')
+    : '마지막 동기화: 없음';
+  var status = document.getElementById('ghSyncStatus');
+  status.textContent = GH.connected
+    ? GH.user + '/' + GH.repo + ' 에 연동됨'
+    : '연동 설정 후 동기화할 수 있습니다.';
+}
+
+// ── 토큰 표시 토글 ────────────────────────────
+function toggleGhEye() {
+  var inp = document.getElementById('ghToken');
+  var eye = document.getElementById('ghEye');
+  if (inp.type === 'password') { inp.type = 'text'; eye.textContent = '🙈'; }
+  else { inp.type = 'password'; eye.textContent = '👁'; }
+}
+
+// ── saveData 후크: GitHub 연동 시 자동 동기화 ─
+var _origSaveData = saveData;
+saveData = function() {
+  _origSaveData();
+  if (GH.connected) {
+    // 2초 디바운스 후 자동 push
+    clearTimeout(ghPushTimer);
+    ghPushTimer = setTimeout(async function() {
+      try {
+        ghUpdateBadge('syncing');
+        var customCats = Object.keys(CAT_META).filter(function(c) { return !BUILTIN.includes(c); });
+        await ghWrite({ prompts: prompts, customCats: customCats });
+        GH.lastSync = new Date().toISOString();
+        ghSaveConfig();
+        ghUpdateBadge('connected');
+      } catch(e) {
+        ghUpdateBadge('error');
+        console.error('GitHub auto-push failed:', e.message);
+      }
+    }, 2000);
+  }
+};
+var ghPushTimer = null;
+
+
+// ═══════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════
+loadData();
+loadCustomCats();
+ghLoadConfig();
+ghUpdateBadge(GH.connected ? 'connected' : 'disconnected');
+ghUpdateModalStatus();
+// 연동된 경우 앱 시작 시 자동 동기화
+if (GH.connected) {
+  ghSync().catch(function() {});
+}
+render();
+</script>
+</body>
+</html>
