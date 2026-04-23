@@ -1,0 +1,1370 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>베스트 프롬프트 라이브러리 — VINYL C</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0E0E10;--sf:#17171A;--s2:#1F1F24;--s3:#27272D;
+  --bd:#2E2E36;--bd2:#3A3A45;
+  --mag:#C631C7;--mg2:#9B22A0;--gld:#E8A000;--blu:#4A90D9;--grn:#2ECC8A;
+  --t1:#F0F0F2;--t2:#9898A8;--t3:#5A5A6A;
+  --r:10px;--rs:6px;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;background:var(--bg);color:var(--t1);min-height:100vh;line-height:1.6}
+
+/* ── HEADER ── */
+.hdr{background:var(--sf);border-bottom:1px solid var(--bd);padding:0 20px;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:100}
+.logo{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;letter-spacing:.1em;color:var(--t1)}
+.logo-dot{width:8px;height:8px;border-radius:50%;background:var(--mag)}
+.hdr-r{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.tot-badge{font-size:12px;color:var(--t2);background:var(--s2);border:1px solid var(--bd);padding:4px 10px;border-radius:99px;white-space:nowrap}
+.tot-badge b{color:var(--mag)}
+.hbtn{display:flex;align-items:center;gap:5px;background:none;border:1px solid var(--bd);border-radius:var(--rs);padding:6px 10px;font-family:inherit;font-size:12px;cursor:pointer;transition:all .15s;color:var(--t3);white-space:nowrap}
+.hbtn:hover{color:var(--t1);border-color:var(--bd2)}
+.hbtn.c-blue{color:var(--blu)}.hbtn.c-blue:hover{border-color:var(--blu);background:rgba(74,144,217,.08)}
+.hbtn.c-set{color:var(--grn);border-color:#1a7a52}
+
+/* DB 배지 */
+.dbbadge{display:flex;align-items:center;gap:4px;font-size:11px;padding:4px 8px;border-radius:99px;border:1px solid var(--bd);color:var(--t3);cursor:pointer;background:var(--s2);transition:all .15s;white-space:nowrap}
+.dbbadge:hover{border-color:var(--bd2);color:var(--t1)}
+.dbbadge .dot{width:6px;height:6px;border-radius:50%;background:var(--t3);flex-shrink:0}
+.dbbadge.st-on{color:var(--grn);border-color:#1a7a52}.dbbadge.st-on .dot{background:var(--grn)}
+.dbbadge.st-sb{color:#1DB954;border-color:#0a5c28}.dbbadge.st-sb .dot{background:#1DB954}
+.dbbadge.st-sync{color:var(--gld);border-color:#5a4000}.dbbadge.st-sync .dot{background:var(--gld);animation:pulse .8s infinite}
+.dbbadge.st-err{color:#E07070;border-color:#7a3030}.dbbadge.st-err .dot{background:#E07070}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* ── LAYOUT ── */
+.layout{display:grid;grid-template-columns:240px 1fr;min-height:calc(100vh - 56px)}
+
+/* ── SIDEBAR ── */
+.side{background:var(--sf);border-right:1px solid var(--bd);padding:20px 0;position:sticky;top:56px;height:calc(100vh - 56px);overflow-y:auto}
+.side-lbl{font-size:10px;font-weight:600;letter-spacing:.1em;color:var(--t3);padding:0 16px;margin-bottom:6px;text-transform:uppercase}
+.side-hr{border:none;border-top:1px solid var(--bd);margin:10px 0}
+/* 사이드바 카테고리 버튼 */
+.cbt{width:100%;display:flex;align-items:center;gap:8px;padding:8px 16px;background:none;border:none;cursor:pointer;font-family:inherit;font-size:13px;color:var(--t2);text-align:left;transition:all .15s;position:relative;user-select:none}
+.cbt:hover{background:var(--s2);color:var(--t1)}
+.cbt.on{background:var(--s2);color:var(--t1)}
+.cbt.on::before{content:'';position:absolute;left:0;top:5px;bottom:5px;width:3px;background:var(--mag);border-radius:0 3px 3px 0}
+.cbt .ci{font-size:14px;width:18px;text-align:center;flex-shrink:0}
+.cbt .cl{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cbt .cn{font-size:11px;background:var(--s3);color:var(--t3);padding:1px 6px;border-radius:99px;min-width:20px;text-align:center;flex-shrink:0}
+.cbt.on .cn{background:var(--mg2);color:#fff}
+/* 삭제 버튼 — span으로 button 중첩 방지 */
+.cbt .cdel{display:none;width:16px;height:16px;align-items:center;justify-content:center;color:var(--t3);font-size:12px;cursor:pointer;flex-shrink:0;border-radius:3px;transition:color .12s}
+.cbt:hover .cdel{display:flex}
+.cbt .cdel:hover{color:#E07070}
+/* 카테고리 추가 입력 */
+.side-add{padding:6px 10px 4px}
+.side-add-row{display:flex;gap:5px;align-items:center}
+.side-add-inp{flex:1;background:var(--s2);border:1px solid var(--bd);border-radius:var(--rs);padding:5px 9px;font-family:inherit;font-size:12px;color:var(--t1);outline:none;transition:border-color .15s;min-width:0}
+.side-add-inp::placeholder{color:var(--t3)}
+.side-add-inp:focus{border-color:var(--mag)}
+.side-add-btn{width:26px;height:26px;background:var(--mag);border:none;border-radius:var(--rs);color:#fff;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .13s;line-height:1}
+.side-add-btn:hover{background:var(--mg2)}
+
+/* ── MAIN ── */
+.main{padding:24px 28px}
+.topbar{display:flex;align-items:center;gap:10px;margin-bottom:18px}
+.srch{flex:1;position:relative}
+.srch svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--t3);pointer-events:none}
+.srch-inp{width:100%;background:var(--sf);border:1px solid var(--bd);border-radius:var(--rs);padding:8px 11px 8px 33px;font-family:inherit;font-size:13px;color:var(--t1);outline:none;transition:border-color .15s}
+.srch-inp::placeholder{color:var(--t3)}
+.srch-inp:focus{border-color:var(--mag)}
+.btn-ai{display:flex;align-items:center;gap:6px;background:var(--sf);color:var(--gld);border:1px solid #5a4000;border-radius:var(--rs);padding:8px 14px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;white-space:nowrap}
+.btn-ai:hover{background:rgba(232,160,0,.1);border-color:var(--gld)}
+.btn-ai:active{transform:scale(.97)}
+.btn-ai.ld{opacity:.6;pointer-events:none}
+.btn-new{display:flex;align-items:center;gap:6px;background:var(--mag);color:#fff;border:none;border-radius:var(--rs);padding:8px 16px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;white-space:nowrap}
+.btn-new:hover{background:var(--mg2)}
+.btn-new:active{transform:scale(.97)}
+.sec-ttl{font-size:15px;font-weight:600;color:var(--t1);margin-bottom:3px}
+.sec-sub{font-size:12px;color:var(--t3);margin-bottom:18px}
+
+/* ── AI PANEL ── */
+.aipanel{display:none;background:#1a1408;border:1px solid #5a4000;border-radius:var(--r);padding:18px;margin-bottom:18px;position:relative;overflow:hidden}
+.aipanel::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--gld),var(--mag))}
+.aipanel.open{display:block;animation:panelIn .25s ease}
+@keyframes panelIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
+.aip-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.aip-ttl{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:600;color:var(--gld)}
+.aip-x{background:none;border:none;color:var(--t3);font-size:14px;cursor:pointer;padding:2px 6px;border-radius:var(--rs);transition:color .12s}
+.aip-x:hover{color:var(--t1)}
+.ai-list{display:flex;flex-direction:column;gap:8px}
+.ai-card{background:var(--sf);border:1px solid var(--bd);border-radius:var(--rs);padding:12px 14px;cursor:pointer;transition:border-color .15s;position:relative}
+.ai-card:hover{border-color:var(--gld)}
+.ai-rank{position:absolute;top:-1px;left:10px;font-size:10px;font-weight:700;padding:2px 7px;border-radius:0 0 5px 5px}
+.rk1{background:var(--gld);color:#1a1200}.rk2,.rk3{background:var(--s3);color:var(--t2)}
+.ai-title{font-size:13px;font-weight:600;color:var(--t1);margin-top:10px;margin-bottom:5px}
+.ai-reason{font-size:12px;color:var(--t2);line-height:1.6}
+.ai-meta{margin-top:7px;display:flex;align-items:center;gap:5px;font-size:11px;color:var(--t3)}
+.ai-score{display:flex;align-items:center;gap:3px;color:var(--gld);font-weight:600}
+.sk-list{display:flex;flex-direction:column;gap:8px}
+.sk-card{background:var(--sf);border:1px solid var(--bd);border-radius:var(--rs);padding:12px 14px;display:flex;flex-direction:column;gap:7px}
+.sk-line{height:11px;background:var(--s3);border-radius:3px;animation:shimmer 1.4s infinite}
+@keyframes shimmer{0%,100%{opacity:.4}50%{opacity:.9}}
+
+/* ── CARDS ── */
+.cgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:12px}
+.pcard{background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);padding:16px;cursor:pointer;transition:border-color .15s,transform .15s;position:relative;display:flex;flex-direction:column;gap:9px}
+.pcard:hover{border-color:var(--bd2);transform:translateY(-1px)}
+.pcard.best{border-color:var(--mag)}
+.pcard.best::after{content:'★ BEST';position:absolute;top:-1px;right:12px;font-size:10px;font-weight:700;letter-spacing:.06em;background:var(--mag);color:#fff;padding:2px 7px;border-radius:0 0 5px 5px}
+.card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:6px}
+.ctag{font-size:10px;font-weight:600;letter-spacing:.06em;padding:3px 8px;border-radius:99px;border:1px solid}
+.tag-prd{color:var(--mag);border-color:var(--mg2);background:rgba(198,49,199,.08)}
+.tag-ux{color:var(--blu);border-color:#2a5a9a;background:rgba(74,144,217,.08)}
+.tag-doc{color:var(--gld);border-color:#8a6000;background:rgba(232,160,0,.08)}
+.tag-dev{color:var(--grn);border-color:#1a7a52;background:rgba(46,204,138,.08)}
+.tag-data{color:#E07070;border-color:#7a3030;background:rgba(224,112,112,.08)}
+.tag-mkt{color:#A0C4E8;border-color:#3a607a;background:rgba(160,196,232,.08)}
+.tag-custom{color:var(--t2);border-color:var(--bd2);background:rgba(255,255,255,.04)}
+.card-acts{display:flex;gap:5px;opacity:0;transition:opacity .15s}
+.pcard:hover .card-acts{opacity:1}
+.ibtn{width:26px;height:26px;background:var(--s2);border:1px solid var(--bd);border-radius:var(--rs);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px;transition:background .12s}
+.ibtn:hover{background:var(--s3)}
+.card-title{font-size:13px;font-weight:600;color:var(--t1)}
+.card-prompt{font-family:'SF Mono',ui-monospace,monospace;font-size:11px;color:var(--t2);line-height:1.7;background:var(--s2);border-radius:var(--rs);padding:9px 11px;max-height:75px;overflow:hidden;position:relative;word-break:break-all}
+.card-prompt::after{content:'';position:absolute;bottom:0;left:0;right:0;height:22px;background:linear-gradient(transparent,var(--s2))}
+.card-meta{display:flex;align-items:center;justify-content:space-between;font-size:11px;color:var(--t3)}
+.card-tools{display:flex;gap:3px;flex-wrap:wrap}
+.tbadge{font-size:10px;padding:2px 6px;background:var(--s3);border-radius:99px;color:var(--t2)}
+.card-date{font-size:11px;color:var(--t3);text-align:right}
+/* 피드백 */
+.card-fb{display:flex;align-items:center;gap:7px;padding-top:7px;border-top:1px solid var(--bd)}
+.fbbtn{display:flex;align-items:center;gap:3px;background:none;border:1px solid var(--bd);border-radius:99px;padding:3px 9px;font-family:inherit;font-size:11px;color:var(--t3);cursor:pointer;transition:all .15s;user-select:none}
+.fbbtn:hover{border-color:var(--bd2);color:var(--t2)}
+.fbbtn.lk{border-color:var(--grn);color:var(--grn);background:rgba(46,204,138,.08)}
+.fbbtn.dlk{border-color:#E07070;color:#E07070;background:rgba(224,112,112,.08)}
+.fbbar{flex:1;height:4px;background:var(--s3);border-radius:99px;overflow:hidden}
+.fbbar-f{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--grn),#2ECC8A);transition:width .4s}
+.fbbar-f.bad{background:linear-gradient(90deg,#E07070,#cc4444)}
+.fbpct{font-size:11px;color:var(--t3)}
+
+/* EMPTY */
+.empty{grid-column:1/-1;text-align:center;padding:60px 20px;color:var(--t3)}
+.empty-ico{font-size:36px;margin-bottom:10px}
+.empty-ttl{font-size:14px;font-weight:600;color:var(--t2);margin-bottom:5px}
+
+/* ── OVERLAY / MODAL ── */
+.ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:200;align-items:center;justify-content:center;padding:20px}
+.ov.open{display:flex}
+.modal{background:var(--sf);border:1px solid var(--bd2);border-radius:14px;width:100%;max-width:600px;max-height:90vh;overflow-y:auto;animation:mIn .2s ease}
+@keyframes mIn{from{opacity:0;transform:translateY(10px) scale(.97)}to{opacity:1;transform:none}}
+.mhdr{padding:18px 22px 14px;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between}
+.mttl{font-size:15px;font-weight:600}
+.mx{width:30px;height:30px;background:var(--s2);border:1px solid var(--bd);border-radius:var(--rs);cursor:pointer;font-size:15px;color:var(--t2);display:flex;align-items:center;justify-content:center;transition:background .12s;line-height:1}
+.mx:hover{background:var(--s3)}
+.mbody{padding:18px 22px;display:flex;flex-direction:column;gap:14px}
+.mfoot{padding:14px 22px;border-top:1px solid var(--bd);display:flex;justify-content:flex-end;gap:8px}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.fg{display:flex;flex-direction:column;gap:5px}
+.flbl{font-size:12px;font-weight:600;color:var(--t2);letter-spacing:.04em}
+.flbl .req{color:var(--mag);margin-left:2px}
+.finp,.fsel,.ftxt{background:var(--s2);border:1px solid var(--bd);border-radius:var(--rs);padding:8px 11px;font-family:inherit;font-size:13px;color:var(--t1);outline:none;transition:border-color .15s;width:100%}
+.finp::placeholder,.ftxt::placeholder{color:var(--t3)}
+.finp:focus,.fsel:focus,.ftxt:focus{border-color:var(--mag)}
+.fsel option{background:var(--s2)}
+.ftxt{font-family:'SF Mono',ui-monospace,monospace;font-size:12px;resize:vertical;min-height:110px;line-height:1.7}
+.fhint{font-size:11px;color:var(--t3)}
+input[type=date]{color-scheme:dark}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-size:12px;padding:4px 11px;border-radius:99px;border:1px solid var(--bd);background:var(--s2);color:var(--t2);cursor:pointer;transition:all .13s;user-select:none}
+.chip:hover{border-color:var(--bd2);color:var(--t1)}
+.chip.on{border-color:var(--mag);background:rgba(198,49,199,.12);color:var(--mag)}
+.star-row{display:flex;align-items:center;gap:9px;font-size:13px;color:var(--t2);cursor:pointer;user-select:none}
+.star-row input{display:none}
+.sbox{width:38px;height:20px;background:var(--s3);border-radius:99px;position:relative;transition:background .2s}
+.sbox::after{content:'';position:absolute;width:14px;height:14px;background:var(--t3);border-radius:50%;top:3px;left:3px;transition:all .2s}
+.star-row input:checked+.sbox{background:var(--mag)}
+.star-row input:checked+.sbox::after{left:21px;background:#fff}
+.bcan{padding:8px 18px;background:var(--s2);border:1px solid var(--bd);border-radius:var(--rs);font-family:inherit;font-size:13px;color:var(--t2);cursor:pointer;transition:background .12s}
+.bcan:hover{background:var(--s3)}
+.bsav{padding:8px 22px;background:var(--mag);border:none;border-radius:var(--rs);font-family:inherit;font-size:13px;font-weight:600;color:#fff;cursor:pointer;transition:background .15s}
+.bsav:hover{background:var(--mg2)}
+
+/* VIEW MODAL */
+.vprompt{font-family:'SF Mono',ui-monospace,monospace;font-size:12px;line-height:1.8;color:var(--t2);background:var(--s2);border-radius:var(--rs);padding:14px;white-space:pre-wrap;word-break:break-word;max-height:280px;overflow-y:auto}
+.cpybtn{width:100%;padding:10px;background:rgba(198,49,199,.12);border:1px solid var(--mag);border-radius:var(--rs);font-family:inherit;font-size:13px;font-weight:600;color:var(--mag);cursor:pointer;transition:background .15s}
+.cpybtn:hover{background:rgba(198,49,199,.22)}
+/* VIEW 피드백 */
+.vfb{display:flex;align-items:center;gap:10px;background:var(--s2);border-radius:var(--rs);padding:12px 16px}
+.vfb-lbl{font-size:12px;color:var(--t2);font-weight:600;flex-shrink:0;line-height:1.5}
+.vfb-btns{display:flex;gap:7px;flex:1}
+.vfb-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:5px;border:1px solid var(--bd);border-radius:var(--rs);padding:9px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;background:none;color:var(--t2)}
+.vfb-btn:hover{transform:scale(1.02)}
+.vfb-btn.lk:hover,.vfb-btn.lk.on{border-color:var(--grn);color:var(--grn);background:rgba(46,204,138,.1)}
+.vfb-btn.dlk:hover,.vfb-btn.dlk.on{border-color:#E07070;color:#E07070;background:rgba(224,112,112,.1)}
+.vfb-score{display:flex;flex-direction:column;align-items:center;gap:3px;min-width:54px}
+.vfb-pct{font-size:20px;font-weight:700;color:var(--grn)}
+.vfb-pct.lo{color:#E07070}
+.vfb-tot{font-size:11px;color:var(--t3)}
+
+/* DB 모달 공통 */
+.db-notice{border-radius:var(--rs);padding:10px 13px;font-size:12px;line-height:1.7;margin-bottom:2px}
+.db-notice.grn{background:rgba(29,185,84,.08);border:1px solid #0a5c28;color:#1DB954}
+.db-notice.grn strong{color:#1DB954}
+.db-notice.blu{background:rgba(74,144,217,.08);border:1px solid #1a3a5a;color:#7ab8f0}
+.db-notice.blu strong{color:var(--blu)}
+.db-notice.ylw{background:rgba(232,160,0,.08);border:1px solid #5a4000;color:#c88800}
+.db-notice.ylw strong{color:var(--gld)}
+.dbst{display:flex;flex-direction:column;gap:5px}
+.dbst-ttl{font-size:10px;font-weight:600;color:var(--t3);letter-spacing:.08em;padding-bottom:5px;border-bottom:1px solid var(--bd);text-transform:uppercase}
+.db-srow{display:flex;align-items:center;justify-content:space-between}
+.db-sbtn{display:flex;align-items:center;gap:5px;border-radius:var(--rs);padding:6px 12px;font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;border:1px solid}
+.db-sbtn.grn{background:rgba(29,185,84,.12);border-color:#1DB954;color:#1DB954}
+.db-sbtn.grn:hover{background:rgba(29,185,84,.22)}
+.db-sbtn.blu{background:rgba(74,144,217,.12);border-color:var(--blu);color:var(--blu)}
+.db-sbtn.blu:hover{background:rgba(74,144,217,.22)}
+.db-sbtn:disabled{opacity:.45;pointer-events:none}
+.db-ls{font-size:11px;color:var(--t3)}
+.gh-tw{position:relative}
+.gh-tw .finp{padding-right:40px;font-family:'SF Mono',ui-monospace,monospace;font-size:12px}
+.gh-eye{position:absolute;right:9px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--t3);cursor:pointer;font-size:13px;padding:2px}
+.gh-eye:hover{color:var(--t1)}
+
+/* API KEY */
+.ak-wrap{position:relative}
+.ak-wrap .finp{padding-right:40px;font-family:'SF Mono',ui-monospace,monospace;font-size:12px}
+.ak-eye{position:absolute;right:9px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--t3);cursor:pointer;font-size:13px}
+.ak-eye:hover{color:var(--t1)}
+.ak-st{display:flex;align-items:center;gap:6px;font-size:12px}
+.ak-dot{width:7px;height:7px;border-radius:50%;background:var(--t3)}
+.ak-dot.on{background:var(--grn)}
+
+/* SHARE */
+.sh-list{display:flex;flex-direction:column;gap:8px}
+.sh-item{background:var(--s2);border:1px solid var(--bd);border-radius:var(--rs);padding:12px 14px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:all .15s}
+.sh-item:hover{border-color:var(--bd2);background:var(--s3)}
+.sh-ico{width:34px;height:34px;border-radius:var(--rs);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.ic-b{background:rgba(74,144,217,.15)}.ic-g{background:rgba(46,204,138,.15)}.ic-y{background:rgba(232,160,0,.15)}
+.sh-info{flex:1}
+.sh-ttl{font-size:13px;font-weight:600;color:var(--t1);margin-bottom:1px}
+.sh-dsc{font-size:11px;color:var(--t3);line-height:1.4}
+.sh-arr{color:var(--t3);font-size:15px}
+.sh-note{background:var(--s2);border-radius:var(--rs);padding:9px 12px;font-size:11px;color:var(--t3);line-height:1.6;border-left:3px solid var(--bd2)}
+
+/* TOAST */
+.toast{position:fixed;bottom:26px;right:26px;background:var(--s3);border:1px solid var(--bd2);border-radius:var(--rs);padding:11px 16px;font-size:13px;color:var(--t1);display:flex;align-items:center;gap:7px;z-index:400;opacity:0;transform:translateY(8px);transition:all .25s;pointer-events:none}
+.toast.show{opacity:1;transform:none}
+.tdot{width:7px;height:7px;border-radius:50%;background:var(--grn);flex-shrink:0}
+
+/* FAB */
+.fab{display:none;position:fixed;bottom:62px;right:14px;width:50px;height:50px;background:var(--mag);border:none;border-radius:50%;color:#fff;font-size:24px;align-items:center;justify-content:center;cursor:pointer;z-index:95;box-shadow:0 4px 18px rgba(198,49,199,.5);transition:all .15s}
+.fab:active{transform:scale(.92);background:var(--mg2)}
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:99px}
+
+/* ── MOBILE ── */
+@media(max-width:680px){
+  .hdr{padding:0 12px;height:50px}
+  .logo{font-size:11px;gap:6px}
+  .logo-dot{width:7px;height:7px}
+  .hdr-r{gap:4px}
+  .tot-badge{display:none}
+  .hbtn{padding:5px 7px}
+  .hbtn .btn-txt{display:none}
+  .dbbadge .lbl{display:none}
+  .dbbadge{padding:4px 6px}
+  .layout{display:block;padding-bottom:64px}
+  /* 모바일 사이드바 → 하단 탭바 */
+  .side{position:fixed;bottom:0;left:0;right:0;top:auto;height:52px;border-right:none;border-top:1px solid var(--bd);padding:0 6px;display:flex;flex-direction:row;align-items:center;gap:3px;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:none;z-index:90}
+  .side::-webkit-scrollbar{display:none}
+  .side-lbl,.side-hr,.side-add{display:none!important}
+  .cbt{flex-shrink:0;width:auto;padding:5px 11px;border-radius:99px;border:1px solid var(--bd);font-size:12px;white-space:nowrap;background:var(--s2)}
+  .cbt .ci{width:auto}
+  .cbt.on{background:var(--mag);color:#fff;border-color:var(--mag)}
+  .cbt.on::before{display:none}
+  .cbt.on .cn{background:rgba(255,255,255,.25);color:#fff}
+  .cbt .cdel{display:none!important}
+  .main{padding:12px}
+  .topbar{gap:6px;margin-bottom:12px;flex-wrap:nowrap}
+  .btn-new .btn-txt{display:none}
+  .btn-new{padding:8px 10px;min-width:36px;justify-content:center}
+  .btn-ai{padding:8px 10px;font-size:12px;gap:4px}
+  .btn-ai .ai-txt{display:none}
+  .cgrid{grid-template-columns:1fr;gap:9px}
+  .card-acts{opacity:1!important}
+  .ov{padding:0;align-items:flex-end}
+  .modal{border-radius:16px 16px 0 0;max-height:90vh;max-width:100%}
+  .mbody{padding:14px 16px;gap:11px}
+  .mhdr{padding:14px 16px 11px}
+  .mfoot{padding:11px 16px 24px}
+  .frow{grid-template-columns:1fr}
+  .fab{display:flex}
+  .vfb{flex-wrap:wrap;gap:8px}
+  .vfb-btns{min-width:160px}
+}
+</style>
+</head>
+<body>
+
+<header class="hdr">
+  <div class="logo"><div class="logo-dot"></div>VINYL C &nbsp;|&nbsp; BEST PROMPT LIBRARY</div>
+  <div class="hdr-r">
+    <div class="dbbadge st-sb" id="sbBadge" onclick="openModal('sbModal')">
+      <div class="dot"></div><span class="lbl" id="sbLbl">Supabase</span>
+    </div>
+    <div class="dbbadge" id="ghBadge" onclick="openModal('ghModal')">
+      <div class="dot"></div><span class="lbl" id="ghLbl">GitHub</span>
+    </div>
+    <button class="hbtn c-blue" onclick="openModal('shareModal')">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+      <span class="btn-txt">공유</span>
+    </button>
+    <button class="hbtn" id="keyBtn" onclick="openModal('keyModal')">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0 3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+      <span class="btn-txt" id="keyLbl">AI 키</span>
+    </button>
+    <div class="tot-badge">프롬프트 <b id="totCnt">0</b>개</div>
+  </div>
+</header>
+
+<button class="fab" onclick="openAddModal()" aria-label="프롬프트 등록">+</button>
+
+<div class="layout">
+  <!-- SIDEBAR -->
+  <aside class="side" id="sidebar">
+    <div class="side-lbl">산출물 유형</div>
+    <button class="cbt on" data-cat="all" onclick="filterCat('all',this)"><span class="ci">📋</span><span class="cl">전체</span><span class="cn" id="cnt-all">0</span></button>
+    <button class="cbt" data-cat="prd" onclick="filterCat('prd',this)"><span class="ci">📝</span><span class="cl">PRD / 기획서</span><span class="cn" id="cnt-prd">0</span></button>
+    <button class="cbt" data-cat="ux"  onclick="filterCat('ux',this)"><span class="ci">🎨</span><span class="cl">UX / 화면설계</span><span class="cn" id="cnt-ux">0</span></button>
+    <button class="cbt" data-cat="doc" onclick="filterCat('doc',this)"><span class="ci">📄</span><span class="cl">보고서 / 문서</span><span class="cn" id="cnt-doc">0</span></button>
+    <button class="cbt" data-cat="dev" onclick="filterCat('dev',this)"><span class="ci">💻</span><span class="cl">개발 / 코드</span><span class="cn" id="cnt-dev">0</span></button>
+    <button class="cbt" data-cat="data" onclick="filterCat('data',this)"><span class="ci">📊</span><span class="cl">데이터 분석</span><span class="cn" id="cnt-data">0</span></button>
+    <button class="cbt" data-cat="mkt" onclick="filterCat('mkt',this)"><span class="ci">📣</span><span class="cl">마케팅 / 카피</span><span class="cn" id="cnt-mkt">0</span></button>
+    <div id="customCats"></div>
+    <div class="side-add">
+      <div class="side-add-row">
+        <input class="side-add-inp" id="newCatInp" type="text" placeholder="+ 유형 직접 추가" maxlength="20" onkeydown="if(event.key==='Enter'){event.preventDefault();}" onkeyup="if(event.key==='Enter'){event.preventDefault();addCat();}">
+        <button class="side-add-btn" type="button" onclick="addCat()">+</button>
+      </div>
+    </div>
+    <hr class="side-hr">
+    <div class="side-lbl">필터</div>
+    <button class="cbt" data-cat="best" onclick="filterCat('best',this)"><span class="ci">⭐</span><span class="cl">BEST만 보기</span><span class="cn" id="cnt-best">0</span></button>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+    <div class="topbar">
+      <div class="srch">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input class="srch-inp" id="searchBox" type="text" placeholder="프롬프트 검색..." oninput="onSearch(this.value)">
+      </div>
+      <button class="btn-ai" id="btnAi" onclick="openAi()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+        <span class="ai-txt">AI 추천</span>
+      </button>
+      <button class="btn-new" onclick="openAddModal()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+        <span class="btn-txt">프롬프트 등록</span>
+      </button>
+    </div>
+
+    <!-- AI PANEL -->
+    <div class="aipanel" id="aiPanel">
+      <div class="aip-hdr">
+        <div class="aip-ttl">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          Gemini AI 추천 결과 <span id="aiCatLbl" style="font-size:11px;font-weight:400;color:var(--t3)"></span>
+        </div>
+        <button class="aip-x" onclick="closeAi()">✕</button>
+      </div>
+      <div id="aiBody"></div>
+    </div>
+
+    <div class="sec-ttl" id="secTtl">📋 전체 프롬프트</div>
+    <div class="sec-sub" id="secSub">모든 산출물 유형의 베스트 프롬프트</div>
+    <div class="cgrid" id="cardGrid"></div>
+  </main>
+</div>
+
+<!-- ADD/EDIT MODAL -->
+<div class="ov" id="addModal">
+  <div class="modal" style="max-width:600px">
+    <div class="mhdr"><div class="mttl" id="addTtl">프롬프트 등록</div><button class="mx" onclick="closeModal('addModal')">✕</button></div>
+    <div class="mbody">
+      <div class="frow">
+        <div class="fg">
+          <label class="flbl">산출물 유형 <span class="req">*</span></label>
+          <select class="fsel" id="fCat" onchange="onCatChange(this.value)">
+            <option value="">선택하세요</option>
+            <option value="prd">PRD / 기획서</option>
+            <option value="ux">UX / 화면설계</option>
+            <option value="doc">보고서 / 문서</option>
+            <option value="dev">개발 / 코드</option>
+            <option value="data">데이터 분석</option>
+            <option value="mkt">마케팅 / 카피</option>
+            <option value="__c__">✏️ 직접 입력</option>
+          </select>
+          <input class="finp" id="fCatC" type="text" placeholder="예: 회의록, 제안서" style="display:none;margin-top:5px">
+        </div>
+        <div class="fg"><label class="flbl">제목 <span class="req">*</span></label><input class="finp" id="fTitle" type="text" placeholder="예: 경쟁사 분석 PRD 초안 작성"></div>
+      </div>
+      <div class="fg">
+        <label class="flbl">프롬프트 내용 <span class="req">*</span></label>
+        <textarea class="ftxt" id="fPrompt" placeholder="베스트 프롬프트를 입력하세요..."></textarea>
+        <div class="fhint">실제로 효과가 좋았던 프롬프트를 그대로 붙여넣기 해주세요.</div>
+      </div>
+      <div class="frow">
+        <div class="fg">
+          <label class="flbl">사용 AI 도구</label>
+          <div class="chips" id="toolChips">
+            <div class="chip" onclick="toggleChip(this)">Claude</div>
+            <div class="chip" onclick="toggleChip(this)">Gemini</div>
+            <div class="chip" onclick="toggleChip(this)">ChatGPT</div>
+            <div class="chip" onclick="toggleChip(this)">Perplexity</div>
+            <div class="chip" onclick="toggleChip(this)">Figma AI</div>
+            <div class="chip" onclick="toggleChip(this)">Claude Code</div>
+          </div>
+        </div>
+        <div class="fg"><label class="flbl">등록자</label><input class="finp" id="fAuthor" type="text" placeholder="이름 또는 팀명"></div>
+      </div>
+      <div class="frow">
+        <div class="fg"><label class="flbl">등록일자 <span class="req">*</span></label><input class="finp" id="fDate" type="date"></div>
+        <div class="fg"><label class="flbl">활용 팁 (선택)</label><input class="finp" id="fTip" type="text" placeholder="예: 배경을 먼저 설명하면 더 좋아요"></div>
+      </div>
+      <label class="star-row"><input type="checkbox" id="fBest"><div class="sbox"></div>⭐ BEST 프롬프트로 표시하기</label>
+    </div>
+    <div class="mfoot"><button class="bcan" onclick="closeModal('addModal')">취소</button><button class="bsav" onclick="savePrompt()">저장하기</button></div>
+  </div>
+</div>
+
+<!-- VIEW MODAL -->
+<div class="ov" id="viewModal">
+  <div class="modal" style="max-width:560px">
+    <div class="mhdr">
+      <div><div class="mttl" id="vTitle"></div><div style="font-size:11px;color:var(--t3);margin-top:2px" id="vMeta"></div></div>
+      <button class="mx" onclick="closeModal('viewModal')">✕</button>
+    </div>
+    <div class="mbody">
+      <div class="fg"><label class="flbl">프롬프트 내용</label><div class="vprompt" id="vPrompt"></div></div>
+      <button class="cpybtn" onclick="doCopy()">📋 프롬프트 복사하기</button>
+      <div class="vfb">
+        <div class="vfb-lbl">이 프롬프트가<br>도움됐나요?</div>
+        <div class="vfb-btns">
+          <button class="vfb-btn lk" id="vLkBtn" onclick="if(viewId!==null)doFeedback(viewId,1)">👍<br><span id="vLkCnt">0</span></button>
+          <button class="vfb-btn dlk" id="vDlkBtn" onclick="if(viewId!==null)doFeedback(viewId,-1)">👎<br><span id="vDlkCnt">0</span></button>
+        </div>
+        <div class="vfb-score"><div class="vfb-pct" id="vPct">-</div><div class="vfb-tot" id="vTot">평가 없음</div></div>
+      </div>
+      <div class="fg" id="vTipWrap" style="display:none">
+        <label class="flbl">활용 팁</label>
+        <div style="font-size:13px;color:var(--t2);background:var(--s2);padding:9px 13px;border-radius:var(--rs);border-left:3px solid var(--gld)" id="vTip"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- API KEY MODAL -->
+<div class="ov" id="keyModal">
+  <div class="modal" style="max-width:440px">
+    <div class="mhdr"><div class="mttl">Gemini API 키 설정</div><button class="mx" onclick="closeModal('keyModal')">✕</button></div>
+    <div class="mbody">
+      <div class="db-notice ylw"><strong>Google Gemini API — 완전 무료!</strong><br>신용카드 없이 무료로 발급 가능합니다.<br>키는 메모리에만 저장되며 새로고침하면 초기화됩니다.</div>
+      <div class="fg">
+        <label class="flbl">Gemini API Key</label>
+        <div class="ak-wrap"><input class="finp" id="keyInp" type="password" placeholder="AIzaSy..." autocomplete="off"><button class="ak-eye" id="keyEye" onclick="toggleKeyEye()">👁</button></div>
+        <div class="fhint">aistudio.google.com → Get API Key → Create API Key 에서 무료 발급</div>
+      </div>
+      <div class="ak-st"><div class="ak-dot" id="keyDot"></div><span id="keyStat" style="color:var(--t3)">API 키가 설정되지 않았습니다</span></div>
+    </div>
+    <div class="mfoot"><button class="bcan" onclick="clearKey()">키 초기화</button><button class="bsav" onclick="saveKey()">저장하기</button></div>
+  </div>
+</div>
+
+<!-- SHARE MODAL -->
+<div class="ov" id="shareModal">
+  <div class="modal" style="max-width:460px">
+    <div class="mhdr"><div class="mttl">공유하기</div><button class="mx" onclick="closeModal('shareModal')">✕</button></div>
+    <div class="mbody">
+      <div class="sh-list">
+        <div class="sh-item" onclick="doShareHtml()"><div class="sh-ico ic-b">📥</div><div class="sh-info"><div class="sh-ttl">HTML 파일 다운로드</div><div class="sh-dsc">현재 프롬프트가 포함된 HTML 파일을 다운로드합니다.</div></div><div class="sh-arr">↓</div></div>
+        <div class="sh-item" onclick="doExportJson()"><div class="sh-ico ic-g">📋</div><div class="sh-info"><div class="sh-ttl">JSON 내보내기</div><div class="sh-dsc">프롬프트 목록만 JSON으로 추출합니다.</div></div><div class="sh-arr">↗</div></div>
+        <div class="sh-item" onclick="doImportJson()"><div class="sh-ico ic-y">📂</div><div class="sh-info"><div class="sh-ttl">JSON 가져오기</div><div class="sh-dsc">팀원이 내보낸 JSON 파일을 불러옵니다. 중복 자동 제거.</div></div><div class="sh-arr">↙</div></div>
+      </div>
+      <div class="sh-note">💡 HTML 파일은 단독 실행 파일로 브라우저에서 바로 열 수 있습니다.</div>
+      <input type="file" id="importFile" accept=".json" style="display:none" onchange="onImport(this)">
+    </div>
+  </div>
+</div>
+
+<!-- SUPABASE MODAL -->
+<div class="ov" id="sbModal">
+  <div class="modal" style="max-width:500px">
+    <div class="mhdr"><div class="mttl">Supabase DB 연동</div><button class="mx" onclick="closeModal('sbModal')">✕</button></div>
+    <div class="mbody">
+      <div class="db-notice grn"><strong>실시간 DB에 연결합니다.</strong><br>프롬프트 등록·수정·삭제가 Supabase에 즉시 저장됩니다.</div>
+      <div class="dbst">
+        <div class="dbst-ttl">연결 정보</div>
+        <div class="fg"><label class="flbl">Project URL <span class="req">*</span></label><input class="finp" id="sbUrl" type="text" placeholder="https://xxxx.supabase.co"></div>
+        <div class="fg"><label class="flbl">anon public key <span class="req">*</span></label><input class="finp" id="sbKey" type="text" placeholder="eyJhbGci..."><div class="fhint">Settings → API Keys → Legacy → anon public</div></div>
+      </div>
+      <div class="dbst">
+        <div class="dbst-ttl">동기화</div>
+        <div class="db-srow">
+          <div class="db-ls" id="sbLastSync">마지막 동기화: 없음</div>
+          <button class="db-sbtn grn" id="sbSyncBtn" onclick="sbSync()" disabled>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><polyline points="23 20 23 14 17 14"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
+            지금 동기화
+          </button>
+        </div>
+        <div class="fhint" id="sbStat">연동 설정 후 동기화할 수 있습니다.</div>
+      </div>
+    </div>
+    <div class="mfoot"><button class="bcan" onclick="sbDisconnect()">연동 해제</button><button class="bsav" onclick="sbConnect()">연결하기</button></div>
+  </div>
+</div>
+
+<!-- GITHUB MODAL -->
+<div class="ov" id="ghModal">
+  <div class="modal" style="max-width:520px">
+    <div class="mhdr"><div class="mttl">GitHub 연동 설정</div><button class="mx" onclick="closeModal('ghModal')">✕</button></div>
+    <div class="mbody">
+      <div class="db-notice blu"><strong>GitHub을 DB로 사용합니다.</strong><br>저장소의 data/prompts.json 파일에 데이터가 저장됩니다.</div>
+      <div class="dbst">
+        <div class="dbst-ttl">저장소 정보</div>
+        <div class="frow">
+          <div class="fg"><label class="flbl">사용자명 <span class="req">*</span></label><input class="finp" id="ghUser" type="text" placeholder="예: vinylc-team"></div>
+          <div class="fg"><label class="flbl">저장소명 <span class="req">*</span></label><input class="finp" id="ghRepo" type="text" placeholder="예: prompt-library"></div>
+        </div>
+        <div class="fg"><label class="flbl">브랜치</label><input class="finp" id="ghBranch" type="text" value="main"></div>
+      </div>
+      <div class="dbst">
+        <div class="dbst-ttl">인증 토큰</div>
+        <div class="fg">
+          <label class="flbl">Personal Access Token <span class="req">*</span></label>
+          <div class="gh-tw"><input class="finp" id="ghToken" type="password" placeholder="ghp_..." autocomplete="off"><button class="gh-eye" id="ghEye" onclick="toggleGhEye()">👁</button></div>
+          <div class="fhint">GitHub → Settings → Developer settings → Personal access tokens → repo 권한</div>
+        </div>
+      </div>
+      <div class="dbst">
+        <div class="dbst-ttl">동기화</div>
+        <div class="db-srow">
+          <div class="db-ls" id="ghLastSync">마지막 동기화: 없음</div>
+          <button class="db-sbtn blu" id="ghSyncBtn" onclick="ghSync()" disabled>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><polyline points="23 20 23 14 17 14"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
+            지금 동기화
+          </button>
+        </div>
+        <div class="fhint" id="ghStat">연동 설정 후 동기화할 수 있습니다.</div>
+      </div>
+    </div>
+    <div class="mfoot"><button class="bcan" onclick="ghDisconnect()">연동 해제</button><button class="bsav" onclick="ghConnect()">연결하기</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"><div class="tdot" id="toastDot"></div><span id="toastMsg"></span></div>
+
+<script>
+// ══════════════════════════════════════════
+// CONSTANTS
+// ══════════════════════════════════════════
+var BUILTIN = ['prd','ux','doc','dev','data','mkt'];
+var CATS = {
+  prd:  {label:'PRD / 기획서',  tag:'tag-prd',  icon:'📝'},
+  ux:   {label:'UX / 화면설계', tag:'tag-ux',   icon:'🎨'},
+  doc:  {label:'보고서 / 문서', tag:'tag-doc',  icon:'📄'},
+  dev:  {label:'개발 / 코드',   tag:'tag-dev',  icon:'💻'},
+  data: {label:'데이터 분석',   tag:'tag-data', icon:'📊'},
+  mkt:  {label:'마케팅 / 카피', tag:'tag-mkt',  icon:'📣'},
+};
+var SMETA = {
+  all:  ['📋 전체 프롬프트',   '모든 산출물 유형의 베스트 프롬프트'],
+  prd:  ['📝 PRD / 기획서',    '기획서·요구사항 문서 작성 프롬프트'],
+  ux:   ['🎨 UX / 화면설계',   'IA·와이어프레임·화면명세서 작성 프롬프트'],
+  doc:  ['📄 보고서 / 문서',   '착수보고서·결과보고서·회의록 작성 프롬프트'],
+  dev:  ['💻 개발 / 코드',     '코드 생성·리뷰·리팩토링 프롬프트'],
+  data: ['📊 데이터 분석',     '데이터 분석·시각화·인사이트 도출 프롬프트'],
+  mkt:  ['📣 마케팅 / 카피',   '카피라이팅·SNS·광고 소재 프롬프트'],
+  best: ['⭐ BEST 프롬프트',   '팀에서 가장 효과가 좋았던 프롬프트 모음'],
+};
+
+// ══════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════
+var prompts = [];
+var curCat = 'all', curSearch = '', editId = null, viewId = null, apiKey = '';
+var srchTimer = null, tTimer = null, sbPushTimer = null, ghPushTimer = null;
+
+var SB = {
+  url: 'https://wsmihuwmziuteziqhpgu.supabase.co',
+  key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndzbWlodXdteml1dGV6aXFocGd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4NDI1MjUsImV4cCI6MjA5MjQxODUyNX0.86GmOBLk_3LPHhNlQw2iPmIqVAWPugdyIfKZpoiK0dY',
+  connected: false, lastSync: null
+};
+var GH = {user:'',repo:'',branch:'main',token:'',sha:'',connected:false,lastSync:null};
+
+// ══════════════════════════════════════════
+// LOCAL DATA
+// ══════════════════════════════════════════
+function loadLocal() {
+  try { prompts = JSON.parse(localStorage.getItem('vc-prompts') || '[]'); } catch(e) { prompts = []; }
+  if (!prompts.length) {
+    prompts = [
+      {id:1,cat:'prd',title:'경쟁사 분석 기반 PRD 초안 작성',prompt:'다음 서비스의 PRD를 작성해줘.\n\n[서비스명]: {서비스명}\n[배경]: {배경}\n[타겟 사용자]: {사용자}\n\n아래 구조로 작성해줘:\n1. 배경 및 목적\n2. 핵심 사용자 문제\n3. 솔루션 개요\n4. 핵심 기능 (MoSCoW 우선순위)\n5. 비기능 요구사항\n6. 성공 지표 (KPI)',tools:['Claude'],author:'이수철',tip:'배경과 타겟 사용자를 구체적으로 입력할수록 완성도가 높아져요.',best:true,copies:24,date:'2026.04.15',likes:8,dislikes:1},
+      {id:2,cat:'ux',title:'IA 구조 자동 설계 프롬프트',prompt:'아래 PRD를 기반으로 정보 구조(IA)를 설계해줘.\n\n[PRD 내용]: {PRD 붙여넣기}\n\n다음 형식으로 작성:\n- Depth 1 (GNB)\n- Depth 2 (섹션)\n- Depth 3 (상세 화면)\n- 각 화면의 주요 컴포넌트',tools:['Claude'],author:'이고은',tip:'PRD 전문을 붙여넣으면 훨씬 정교한 IA가 나와요.',best:true,copies:18,date:'2026.04.16',likes:6,dislikes:0},
+      {id:3,cat:'doc',title:'바이널씨 스타일 보고서 변환',prompt:'Vinylc_Report_Template.md 파일을 참고해서 바이널씨 스타일로 착수보고서를 만들꺼야\n내가 참고할 착수보고서 초안을 보내줄께\n해당 문서를 바이널씨 스타일로 변경하고 내용도 고도화 해줘',tools:['Claude'],author:'유경구',tip:'Vinylc_Report_Template.md와 원본 PPTX를 함께 업로드하세요.',best:true,copies:31,date:'2026.04.21',likes:12,dislikes:1},
+      {id:4,cat:'dev',title:'React 컴포넌트 코드 리뷰',prompt:'아래 React 컴포넌트를 코드 리뷰해줘.\n\n[코드]: {코드 붙여넣기}\n\n검토 기준:\n1. 성능 이슈\n2. 접근성 (aria, semantic HTML)\n3. 코드 가독성\n4. 잠재적 버그\n5. 개선 제안',tools:['Claude','Claude Code'],author:'개발팀',tip:'컴포넌트 전체 코드를 붙여넣을수록 정확한 리뷰가 나와요.',best:false,copies:9,date:'2026.04.17',likes:4,dislikes:2},
+      {id:5,cat:'data',title:'사용자 리뷰 감성 분석 요약',prompt:'아래 사용자 리뷰 데이터를 분석해줘.\n\n[리뷰 데이터]: {데이터 붙여넣기}\n\n결과 형식:\n1. 긍정 키워드 Top 10\n2. 부정 키워드 Top 10\n3. 카테고리별 감성 점수\n4. 개선 우선순위 제안\n5. 경영진 보고용 3줄 요약',tools:['Claude','Gemini'],author:'데이터팀',tip:'CSV나 텍스트로 리뷰를 붙여넣으면 바로 분석해줘요.',best:false,copies:7,date:'2026.04.18',likes:3,dislikes:1},
+    ];
+    saveLocal();
+  }
+}
+function saveLocal() { localStorage.setItem('vc-prompts', JSON.stringify(prompts)); }
+function saveData() {
+  saveLocal();
+  if (SB.connected) {
+    clearTimeout(sbPushTimer);
+    sbPushTimer = setTimeout(function() {
+      // auto-push는 개별 CRUD에서 처리 — 여기선 생략
+    }, 2000);
+  }
+  if (GH.connected && !SB.connected) {
+    clearTimeout(ghPushTimer);
+    ghPushTimer = setTimeout(function() {
+      var cc = Object.keys(CATS).filter(function(c){return !BUILTIN.includes(c);});
+      ghWrite({prompts:prompts,customCats:cc})
+        .then(function(){GH.lastSync=new Date().toISOString();ghSaveConfig();ghBadge('on');})
+        .catch(function(e){ghBadge('err');console.error('GH push:',e.message);});
+    }, 2000);
+  }
+}
+
+// ══════════════════════════════════════════
+// CUSTOM CATEGORIES
+// ══════════════════════════════════════════
+function loadCustomCats() {
+  var cats = [];
+  try { cats = JSON.parse(localStorage.getItem('vc-cats') || '[]'); } catch(e) {}
+  cats.forEach(function(cat) { if (!CATS[cat]) regCat(cat); });
+}
+function saveCustomCats() {
+  localStorage.setItem('vc-cats', JSON.stringify(
+    Object.keys(CATS).filter(function(c){ return !BUILTIN.includes(c); })
+  ));
+}
+function regCat(cat) {
+  if (CATS[cat]) return;
+  CATS[cat] = {label:cat, tag:'tag-custom', icon:'🗂️'};
+  SMETA[cat] = ['🗂️ '+cat, cat+' 관련 프롬프트'];
+  addCatBtn(cat);
+  addCatOpt(cat);
+}
+function addCatBtn(cat) {
+  // 이미 있으면 중복 방지
+  if (document.querySelector('.cbt[data-cat="'+cat+'"]')) return;
+  var el = document.createElement('button');
+  el.className = 'cbt';
+  el.type = 'button';
+  el.setAttribute('data-cat', cat);
+  // span으로 구성 — button 중첩 없음
+  el.innerHTML =
+    '<span class="ci">🗂️</span>' +
+    '<span class="cl">'+esc(cat)+'</span>' +
+    '<span class="cn" id="cnt-'+cat+'">0</span>' +
+    '<span class="cdel" title="삭제">✕</span>';
+  el.addEventListener('click', function(e) {
+    if (e.target.classList.contains('cdel')) {
+      e.stopPropagation();
+      delCat(cat);
+      return;
+    }
+    filterCat(cat, el);
+  });
+  document.getElementById('customCats').appendChild(el);
+}
+function addCatOpt(cat) {
+  var sel = document.getElementById('fCat');
+  if (Array.from(sel.options).some(function(o){ return o.value === cat; })) return;
+  var opt = document.createElement('option');
+  opt.value = cat; opt.textContent = cat;
+  sel.insertBefore(opt, sel.querySelector('[value="__c__"]'));
+}
+
+// ══════════════════════════════════════════
+// FEEDBACK
+// ══════════════════════════════════════════
+function getMyFb(id) {
+  try { return JSON.parse(localStorage.getItem('vc-fb') || '{}')[id] || 0; } catch(e) { return 0; }
+}
+function setMyFb(id, val) {
+  try {
+    var fb = JSON.parse(localStorage.getItem('vc-fb') || '{}');
+    fb[id] = val;
+    localStorage.setItem('vc-fb', JSON.stringify(fb));
+  } catch(e) {}
+}
+function doFeedback(id, val) {
+  var p = prompts.find(function(x){ return x.id === id; });
+  if (!p) return;
+  p.likes = p.likes || 0; p.dislikes = p.dislikes || 0;
+  var prev = getMyFb(id);
+  if (prev === val) {
+    if (val === 1) p.likes = Math.max(0, p.likes-1);
+    if (val === -1) p.dislikes = Math.max(0, p.dislikes-1);
+    setMyFb(id, 0); toast('피드백이 취소되었습니다.');
+  } else {
+    if (prev === 1) p.likes = Math.max(0, p.likes-1);
+    if (prev === -1) p.dislikes = Math.max(0, p.dislikes-1);
+    if (val === 1)  { p.likes += 1;    toast('👍 도움됐어요! 피드백 감사해요.'); }
+    if (val === -1) { p.dislikes += 1; toast('👎 피드백 감사해요. 개선에 반영할게요.', false); }
+    setMyFb(id, val);
+  }
+  saveData();
+  if (SB.connected) sbUpdate(p).catch(function(){});
+  updateVFb(id); render();
+}
+function updateVFb(id) {
+  var p = prompts.find(function(x){ return x.id === id; });
+  if (!p) return;
+  var lk = p.likes||0, dlk = p.dislikes||0, tot = lk+dlk;
+  var pct = tot > 0 ? Math.round(lk/tot*100) : null;
+  var my = getMyFb(id);
+  var el = {
+    lk:  document.getElementById('vLkCnt'),
+    dlk: document.getElementById('vDlkCnt'),
+    pct: document.getElementById('vPct'),
+    tot: document.getElementById('vTot'),
+    lb:  document.getElementById('vLkBtn'),
+    db:  document.getElementById('vDlkBtn'),
+  };
+  if (!el.lk) return;
+  el.lk.textContent = lk; el.dlk.textContent = dlk;
+  if (pct !== null) { el.pct.textContent=pct+'%'; el.pct.className='vfb-pct'+(pct<50?' lo':''); el.tot.textContent='총 '+tot+'명 평가'; }
+  else { el.pct.textContent='-'; el.pct.className='vfb-pct'; el.tot.textContent='평가 없음'; }
+  el.lb.className = 'vfb-btn lk'  + (my===1  ? ' on':'');
+  el.db.className = 'vfb-btn dlk' + (my===-1 ? ' on':'');
+}
+
+// ══════════════════════════════════════════
+// RENDER
+// ══════════════════════════════════════════
+function updateCounts() {
+  var cnt = {};
+  prompts.forEach(function(p){ cnt[p.cat]=(cnt[p.cat]||0)+1; });
+  document.getElementById('totCnt').textContent = prompts.length;
+  document.getElementById('cnt-all').textContent = prompts.length;
+  document.getElementById('cnt-best').textContent = prompts.filter(function(p){return p.best;}).length;
+  Object.keys(CATS).forEach(function(c){
+    var el = document.getElementById('cnt-'+c);
+    if (el) el.textContent = cnt[c] || 0;
+  });
+}
+function getList() {
+  var list = prompts.slice();
+  if (curCat === 'best') list = list.filter(function(p){return p.best;});
+  else if (curCat !== 'all') list = list.filter(function(p){return p.cat===curCat;});
+  if (curSearch) {
+    var q = curSearch.toLowerCase();
+    list = list.filter(function(p){
+      return p.title.toLowerCase().includes(q) ||
+             p.prompt.toLowerCase().includes(q) ||
+             (p.tip||'').toLowerCase().includes(q);
+    });
+  }
+  return list;
+}
+function render() {
+  updateCounts();
+  var list = getList();
+  var grid = document.getElementById('cardGrid');
+  if (!list.length) {
+    grid.innerHTML = '<div class="empty"><div class="empty-ico">🔍</div><div class="empty-ttl">프롬프트가 없어요</div><div>새 프롬프트를 등록해보세요!</div></div>';
+    return;
+  }
+  var h = '';
+  list.forEach(function(p) {
+    var cm = CATS[p.cat] || {label:p.cat, tag:'tag-custom', icon:'🗂️'};
+    var tools = (p.tools||[]).map(function(t){return '<span class="tbadge">'+esc(t)+'</span>';}).join('');
+    var lk=p.likes||0, dlk=p.dislikes||0, tot=lk+dlk;
+    var pct = tot>0 ? Math.round(lk/tot*100) : -1;
+    var my = getMyFb(p.id);
+    h += '<div class="pcard'+(p.best?' best':'')+'" onclick="openView('+p.id+')">';
+    h += '<div class="card-top">';
+    h += '<span class="ctag '+cm.tag+'">'+cm.icon+' '+esc(cm.label)+'</span>';
+    h += '<div class="card-acts" onclick="event.stopPropagation()">';
+    h += '<button class="ibtn" onclick="openEdit('+p.id+')" title="수정">✏️</button>';
+    h += '<button class="ibtn" onclick="delPrompt('+p.id+')" title="삭제">🗑️</button>';
+    h += '</div></div>';
+    h += '<div class="card-title">'+esc(p.title)+'</div>';
+    h += '<div class="card-prompt">'+esc(p.prompt)+'</div>';
+    h += '<div class="card-meta"><div class="card-tools">'+tools+'</div><div>📋 '+(p.copies||0)+'회</div></div>';
+    if (p.date) h += '<div class="card-date">'+esc(p.date)+'</div>';
+    h += '<div class="card-fb" onclick="event.stopPropagation()">';
+    h += '<button class="fbbtn'+(my===1?' lk':'')+'" onclick="doFeedback('+p.id+',1)">👍 <span>'+lk+'</span></button>';
+    h += '<button class="fbbtn'+(my===-1?' dlk':'')+'" onclick="doFeedback('+p.id+',-1)">👎 <span>'+dlk+'</span></button>';
+    if (pct >= 0) {
+      h += '<div class="fbbar"><div class="fbbar-f'+(pct<50?' bad':'')+'" style="width:'+pct+'%"></div></div>';
+      h += '<span class="fbpct">'+pct+'%</span>';
+    }
+    h += '</div></div>';
+  });
+  grid.innerHTML = h;
+}
+
+// ══════════════════════════════════════════
+// FILTER / SEARCH
+// ══════════════════════════════════════════
+function filterCat(cat, el) {
+  curCat = cat;
+  document.querySelectorAll('.cbt').forEach(function(b){b.classList.remove('on');});
+  el.classList.add('on');
+  var m = SMETA[cat] || ['🗂️ '+cat, cat+' 관련 프롬프트'];
+  document.getElementById('secTtl').textContent = m[0];
+  document.getElementById('secSub').textContent = m[1];
+  render();
+}
+function addCat() {
+  var inp = document.getElementById('newCatInp');
+  var cat = inp.value.trim();
+  inp.value = ''; // 먼저 초기화 — 중복 실행 방지
+  if (!cat) return;
+  if (CATS[cat] || ['all','best'].includes(cat)) { toast('이미 있는 유형이에요.', false); return; }
+  regCat(cat); saveCustomCats();
+  toast("'"+cat+"' 카테고리 추가됨"); render();
+  if (SB.connected) sbInsertCat(cat).catch(function(){});
+}
+function delCat(cat) {
+  var n = prompts.filter(function(p){return p.cat===cat;}).length;
+  if (n > 0 && !confirm("'"+cat+"' 유형의 프롬프트 "+n+"개가 있어요.\n카테고리만 삭제할까요?")) return;
+  var btn = document.querySelector('.cbt[data-cat="'+cat+'"]');
+  if (btn) btn.remove();
+  var opt = document.querySelector('#fCat option[value="'+cat+'"]');
+  if (opt) opt.remove();
+  delete CATS[cat]; delete SMETA[cat]; saveCustomCats();
+  if (curCat === cat) filterCat('all', document.querySelector('.cbt[data-cat="all"]'));
+  toast("'"+cat+"' 카테고리 삭제됨"); render();
+  if (SB.connected) sbDeleteCat(cat).catch(function(){});
+}
+function onSearch(val) {
+  clearTimeout(srchTimer);
+  srchTimer = setTimeout(function(){ curSearch=val; render(); }, 200);
+}
+
+// ══════════════════════════════════════════
+// ADD / EDIT
+// ══════════════════════════════════════════
+function toggleChip(el) { el.classList.toggle('on'); }
+function onCatChange(val) {
+  var cc = document.getElementById('fCatC');
+  cc.style.display = (val==='__c__') ? 'block' : 'none';
+  if (val !== '__c__') cc.value = '';
+}
+function openAddModal() {
+  editId = null;
+  document.getElementById('addTtl').textContent = '프롬프트 등록';
+  document.getElementById('fCat').value = '';
+  document.getElementById('fCatC').value = ''; document.getElementById('fCatC').style.display='none';
+  document.getElementById('fTitle').value = '';
+  document.getElementById('fPrompt').value = '';
+  document.getElementById('fAuthor').value = '';
+  document.getElementById('fTip').value = '';
+  document.getElementById('fDate').value = new Date().toISOString().slice(0,10);
+  document.getElementById('fBest').checked = false;
+  document.querySelectorAll('#toolChips .chip').forEach(function(c){c.classList.remove('on');});
+  openModal('addModal');
+}
+function openEdit(id) {
+  var p = prompts.find(function(x){return x.id===id;});
+  if (!p) return;
+  editId = id;
+  document.getElementById('addTtl').textContent = '프롬프트 수정';
+  var isC = !BUILTIN.includes(p.cat);
+  var sel = document.getElementById('fCat'), cc = document.getElementById('fCatC');
+  if (isC) { sel.value='__c__'; cc.style.display='block'; cc.value=p.cat; }
+  else { sel.value=p.cat; cc.style.display='none'; cc.value=''; }
+  document.getElementById('fTitle').value  = p.title;
+  document.getElementById('fPrompt').value = p.prompt;
+  document.getElementById('fAuthor').value = p.author||'';
+  document.getElementById('fTip').value    = p.tip||'';
+  document.getElementById('fDate').value   = (p.date||'').replace(/\./g,'-');
+  document.getElementById('fBest').checked = !!p.best;
+  document.querySelectorAll('#toolChips .chip').forEach(function(c){
+    c.classList.toggle('on', (p.tools||[]).includes(c.textContent));
+  });
+  openModal('addModal');
+}
+function savePrompt() {
+  var cat = document.getElementById('fCat').value;
+  if (cat==='__c__') { cat=document.getElementById('fCatC').value.trim(); if(!cat){toast('유형명을 입력해주세요.',false);return;} }
+  var title  = document.getElementById('fTitle').value.trim();
+  var prompt = document.getElementById('fPrompt').value.trim();
+  if (!cat||!title||!prompt) { toast('산출물 유형, 제목, 프롬프트는 필수입니다.',false); return; }
+  if (!CATS[cat]) { regCat(cat); saveCustomCats(); }
+  var tools = Array.from(document.querySelectorAll('#toolChips .chip.on')).map(function(c){return c.textContent;});
+  var dv = document.getElementById('fDate').value;
+  var isEdit = !!editId, curEditId = editId; // 타이밍 버그 방지
+  var data = {
+    cat:cat, title:title, prompt:prompt, tools:tools,
+    author: document.getElementById('fAuthor').value.trim(),
+    tip: document.getElementById('fTip').value.trim(),
+    best: document.getElementById('fBest').checked,
+    copies:0, date:dv?dv.replace(/-/g,'.'):'', likes:0, dislikes:0,
+  };
+  if (isEdit) {
+    var idx = prompts.findIndex(function(x){return x.id===curEditId;});
+    if (idx >= 0) {
+      data.id=curEditId; data.copies=prompts[idx].copies||0;
+      data.likes=prompts[idx].likes||0; data.dislikes=prompts[idx].dislikes||0;
+      prompts[idx]=data;
+    }
+    saveData(); closeModal('addModal'); render(); toast('프롬프트가 수정되었습니다.');
+    if (SB.connected) sbUpdate(data).catch(function(e){toast('DB 수정 오류: '+e.message,false);});
+  } else {
+    data.id = Date.now();
+    prompts.unshift(data);
+    saveData(); closeModal('addModal'); render(); toast('프롬프트가 등록되었습니다.');
+    if (SB.connected) {
+      sbInsert(data).then(function(row){
+        if (row && row.id && row.id !== data.id) {
+          var i = prompts.findIndex(function(x){return x.id===data.id;});
+          if (i>=0) { prompts[i].id=row.id; saveLocal(); render(); }
+        }
+      }).catch(function(e){toast('DB 저장 오류: '+e.message,false);});
+    }
+  }
+}
+function delPrompt(id) {
+  if (!confirm('이 프롬프트를 삭제할까요?')) return;
+  prompts = prompts.filter(function(x){return x.id!==id;});
+  saveData(); render(); toast('삭제되었습니다.');
+  if (SB.connected) sbDelete(id).catch(function(e){console.error('DB 삭제:',e.message);});
+}
+
+// ══════════════════════════════════════════
+// VIEW
+// ══════════════════════════════════════════
+function openView(id) {
+  var p = prompts.find(function(x){return x.id===id;});
+  if (!p) return;
+  viewId = id;
+  var cm = CATS[p.cat] || {label:p.cat};
+  document.getElementById('vTitle').textContent = p.title;
+  document.getElementById('vMeta').textContent = [cm.label,(p.tools||[]).join(', '),p.author,p.date].filter(Boolean).join(' · ');
+  document.getElementById('vPrompt').textContent = p.prompt;
+  var tw = document.getElementById('vTipWrap');
+  if (p.tip) { tw.style.display=''; document.getElementById('vTip').textContent=p.tip; }
+  else { tw.style.display='none'; }
+  openModal('viewModal'); updateVFb(id);
+}
+function doCopy() {
+  var p = prompts.find(function(x){return x.id===viewId;});
+  if (!p) return;
+  navigator.clipboard.writeText(p.prompt).then(function(){
+    p.copies=(p.copies||0)+1; saveData();
+    if (SB.connected) sbUpdate(p).catch(function(){});
+    toast('클립보드에 복사되었습니다!'); closeModal('viewModal'); render();
+  }).catch(function(){toast('복사 실패 — 직접 선택해주세요.',false);});
+}
+
+// ══════════════════════════════════════════
+// API KEY (GROQ)
+// ══════════════════════════════════════════
+function saveKey() {
+  var v = document.getElementById('keyInp').value.trim();
+  if (!v||v.startsWith('•')) { toast('API 키를 입력해주세요.',false); return; }
+  if (!v.startsWith('AIzaSy')) { toast('올바른 Gemini API 키 형식이 아닙니다. AIzaSy 로 시작해야 해요.',false); return; }
+  apiKey=v; updateKeyUI(); closeModal('keyModal'); toast('API 키가 설정되었습니다.');
+}
+function clearKey() { apiKey=''; document.getElementById('keyInp').value=''; updateKeyUI(); closeModal('keyModal'); toast('API 키가 초기화되었습니다.'); }
+function toggleKeyEye() {
+  var i=document.getElementById('keyInp'), e=document.getElementById('keyEye');
+  i.type=i.type==='password'?'text':'password'; e.textContent=i.type==='password'?'👁':'🙈';
+}
+function updateKeyUI() {
+  var dot=document.getElementById('keyDot'), st=document.getElementById('keyStat');
+  var btn=document.getElementById('keyBtn'), lbl=document.getElementById('keyLbl');
+  if (apiKey) { dot.classList.add('on'); st.style.color='var(--grn)'; st.textContent='설정됨 · ...'+apiKey.slice(-4); btn.classList.add('c-set'); lbl.textContent='키 설정됨 ✓'; }
+  else { dot.classList.remove('on'); st.style.color='var(--t3)'; st.textContent='API 키가 설정되지 않았습니다'; btn.classList.remove('c-set'); lbl.textContent='AI 키'; }
+}
+
+// ══════════════════════════════════════════
+// AI 추천 (GROQ)
+// ══════════════════════════════════════════
+async function openAi() {
+  var panel=document.getElementById('aiPanel'), body=document.getElementById('aiBody');
+  var btn=document.getElementById('btnAi'), lbl=document.getElementById('aiCatLbl');
+  var list=getList();
+  if (!list.length) { toast('추천할 프롬프트가 없어요.',false); return; }
+  if (!apiKey) {
+    panel.classList.add('open');
+    body.innerHTML='<div style="text-align:center;padding:24px 16px">' +
+      '<div style="font-size:26px;margin-bottom:8px">🔑</div>' +
+      '<div style="font-size:14px;font-weight:600;color:var(--t1);margin-bottom:5px">Gemini API 키가 필요해요</div>' +
+      '<div style="font-size:12px;color:var(--t3);margin-bottom:14px">aistudio.google.com 에서 무료로 발급받을 수 있어요!</div>' +
+      '<button onclick="closeAi();openModal(\'keyModal\')" style="background:var(--mag);border:none;border-radius:6px;padding:8px 18px;font-family:inherit;font-size:13px;font-weight:600;color:#fff;cursor:pointer">Gemini API 키 설정하기</button>' +
+      '</div>';
+    return;
+  }
+  lbl.textContent = '— '+(curCat==='all'?'전체':(CATS[curCat]?CATS[curCat].label:curCat));
+  panel.classList.add('open'); btn.classList.add('ld');
+  btn.innerHTML='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg> <span class="ai-txt">분석 중...</span>';
+  body.innerHTML='<div class="sk-list">'+[1,2,3].map(function(){return'<div class="sk-card"><div class="sk-line" style="width:30%"></div><div class="sk-line" style="width:80%"></div><div class="sk-line" style="width:55%"></div></div>';}).join('')+'</div>';
+  var sample=list.slice(0,20).map(function(p,i){
+    return '['+(i+1)+'] 제목: '+p.title+'\n유형: '+(CATS[p.cat]?CATS[p.cat].label:p.cat)+
+      '\n내용: '+p.prompt.slice(0,180)+(p.prompt.length>180?'...':'')+
+      '\n복사횟수: '+(p.copies||0)+'회  좋아요: '+(p.likes||0)+'  나빠요: '+(p.dislikes||0);
+  }).join('\n\n---\n\n');
+  try {
+    // Gemini API 호출
+    var geminiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + apiKey;
+    var geminiPrompt = '당신은 업무 프롬프트 품질을 평가하는 전문가입니다. 반드시 순수한 JSON만 응답하세요.\n\n' +
+      '다음 프롬프트 목록에서 실무 활용도, 구체성, 재사용 가능성, 팀 피드백을 종합하여 베스트 3개를 선정해주세요.\n\n' +
+      sample +
+      '\n\n반드시 아래 JSON 형식으로만 응답하세요. 다른 텍스트나 마크다운 없이 JSON만:\n' +
+      '{"recommendations":[{"rank":1,"index":1,"title":"제목","score":9,"reason":"추천 이유 2문장"},{"rank":2,"index":2,"title":"제목","score":8,"reason":"추천 이유 2문장"},{"rank":3,"index":3,"title":"제목","score":7,"reason":"추천 이유 2문장"}]}';
+    var res = await fetch(geminiUrl, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        contents: [{parts: [{text: geminiPrompt}]}],
+        generationConfig: {temperature: 0.3, maxOutputTokens: 1000}
+      })
+    });
+    var data = await res.json();
+    if (data.error) throw new Error(data.error.message || 'Gemini API 오류');
+    var rawText = (data.candidates && data.candidates[0] &&
+      data.candidates[0].content && data.candidates[0].content.parts &&
+      data.candidates[0].content.parts[0] && data.candidates[0].content.parts[0].text) || '';
+    if (!rawText) throw new Error('응답을 받지 못했습니다.');
+    var parsed = JSON.parse(rawText.replace(/```json|```/g,'').trim());
+    var recs = parsed.recommendations;
+    var rkl=['🥇 1위','🥈 2위','🥉 3위'], rkc=['rk1','rk2','rk3'];
+    var h='<div class="ai-list">';
+    recs.forEach(function(r,i){
+      var orig=list[r.index-1], oid=orig?orig.id:null;
+      h+='<div class="ai-card"'+(oid?' onclick="openView('+oid+')"':'')+' style="cursor:'+(oid?'pointer':'default')+'">';
+      h+='<div class="ai-rank '+(rkc[i]||'rk3')+'">'+(rkl[i]||'')+'</div>';
+      h+='<div class="ai-title">'+esc(r.title)+'</div>';
+      h+='<div class="ai-reason">'+esc(r.reason)+'</div>';
+      h+='<div class="ai-meta"><div class="ai-score"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>'+r.score+'/10</div>';
+      if (orig) h+='<span>·</span><span>'+esc(CATS[orig.cat]?CATS[orig.cat].label:orig.cat)+'</span><span>·</span><span>👍 '+(orig.likes||0)+'</span><span>·</span><span>📋 '+(orig.copies||0)+'회</span>';
+      h+='</div></div>';
+    });
+    h+='</div><div style="margin-top:10px;font-size:11px;color:var(--t3);text-align:right">Google Gemini (gemini-1.5-flash) 분석 · 카드 클릭 시 프롬프트 전문 보기</div>';
+    body.innerHTML=h;
+  } catch(e) {
+    body.innerHTML='<div style="text-align:center;padding:20px;color:var(--t3);font-size:13px">분석 중 오류가 발생했습니다.<br><span style="font-size:11px">'+esc(e.message)+'</span></div>';
+  }
+  btn.classList.remove('ld');
+  btn.innerHTML='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg> <span class="ai-txt">AI 추천</span>';
+}
+function closeAi() { document.getElementById('aiPanel').classList.remove('open'); }
+
+// ══════════════════════════════════════════
+// SHARE
+// ══════════════════════════════════════════
+function doShareHtml() {
+  try {
+    var blob=new Blob([document.documentElement.outerHTML],{type:'text/html;charset=utf-8'});
+    var a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+    a.download='베스트프롬프트_'+new Date().toLocaleDateString('ko-KR').replace(/\. /g,'-').replace('.','')+'.html';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(a.href);
+    closeModal('shareModal'); toast('HTML 파일 다운로드 완료!');
+  } catch(e){toast('다운로드 오류: '+e.message,false);}
+}
+function doExportJson() {
+  try {
+    var cc=Object.keys(CATS).filter(function(c){return !BUILTIN.includes(c);});
+    var blob=new Blob([JSON.stringify({version:1,exported:new Date().toISOString(),prompts:prompts,customCats:cc},null,2)],{type:'application/json'});
+    var a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+    a.download='프롬프트_'+new Date().toLocaleDateString('ko-KR').replace(/\. /g,'-').replace('.','')+'.json';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(a.href);
+    closeModal('shareModal'); toast('JSON 내보내기 완료!');
+  } catch(e){toast('내보내기 오류: '+e.message,false);}
+}
+function doImportJson() { document.getElementById('importFile').value=''; document.getElementById('importFile').click(); }
+function onImport(input) {
+  var file=input.files[0]; if(!file)return;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      var data=JSON.parse(e.target.result);
+      var imported=Array.isArray(data)?data:(data.prompts||[]);
+      if(!Array.isArray(imported))throw new Error('올바른 형식이 아닙니다.');
+      var ids=new Set(prompts.map(function(p){return p.id;}));
+      var nw=imported.filter(function(p){return !ids.has(p.id);});
+      prompts=prompts.concat(nw); saveData();
+      if(data.customCats){data.customCats.forEach(function(c){if(!CATS[c])regCat(c);});saveCustomCats();}
+      render(); closeModal('shareModal'); toast(nw.length+'개 프롬프트를 가져왔습니다!');
+    }catch(err){toast('파일 읽기 오류: '+err.message,false);}
+    input.value='';
+  };
+  reader.readAsText(file);
+}
+
+// ══════════════════════════════════════════
+// SUPABASE CRUD
+// ══════════════════════════════════════════
+function sbH() { return {'Content-Type':'application/json','apikey':SB.key,'Authorization':'Bearer '+SB.key,'Prefer':'return=representation'}; }
+function sbU(path) { return SB.url+'/rest/v1'+path; }
+function sbRow(r){ return {id:r.id,cat:r.cat,title:r.title,prompt:r.prompt,tools:r.tools||[],author:r.author||'',tip:r.tip||'',best:!!r.best,copies:r.copies||0,date:r.date||'',likes:r.likes||0,dislikes:r.dislikes||0}; }
+
+async function sbRead() {
+  var res=await fetch(sbU('/prompts?order=id.desc'),{headers:sbH()});
+  if(!res.ok){var e=await res.json();throw new Error(e.message||'READ 오류');}
+  return await res.json();
+}
+async function sbReadCats() {
+  var res=await fetch(sbU('/custom_cats?order=id.asc'),{headers:sbH()});
+  if(!res.ok)return[];
+  return await res.json();
+}
+async function sbInsert(p) {
+  var body={cat:p.cat,title:p.title,prompt:p.prompt,tools:p.tools||[],author:p.author||'',tip:p.tip||'',best:!!p.best,copies:p.copies||0,date:p.date||'',likes:p.likes||0,dislikes:p.dislikes||0};
+  var res=await fetch(sbU('/prompts'),{method:'POST',headers:sbH(),body:JSON.stringify(body)});
+  if(!res.ok){var e=await res.json();throw new Error(e.message||'INSERT 오류');}
+  var rows=await res.json(); return rows[0];
+}
+async function sbUpdate(p) {
+  var body={cat:p.cat,title:p.title,prompt:p.prompt,tools:p.tools||[],author:p.author||'',tip:p.tip||'',best:!!p.best,copies:p.copies||0,date:p.date||'',likes:p.likes||0,dislikes:p.dislikes||0};
+  var res=await fetch(sbU('/prompts?id=eq.'+p.id),{method:'PATCH',headers:sbH(),body:JSON.stringify(body)});
+  if(!res.ok){var e=await res.json();throw new Error(e.message||'UPDATE 오류');}
+}
+async function sbDelete(id) {
+  var res=await fetch(sbU('/prompts?id=eq.'+id),{method:'DELETE',headers:sbH()});
+  if(!res.ok){var e=await res.json();throw new Error(e.message||'DELETE 오류');}
+}
+async function sbInsertCat(name){await fetch(sbU('/custom_cats'),{method:'POST',headers:sbH(),body:JSON.stringify({name:name})});}
+async function sbDeleteCat(name){await fetch(sbU('/custom_cats?name=eq.'+encodeURIComponent(name)),{method:'DELETE',headers:sbH()});}
+
+function sbLoadConfig(){
+  try{
+    var cfg=JSON.parse(localStorage.getItem('vc-sb')||'{}');
+    if(cfg.url)SB.url=cfg.url; if(cfg.key)SB.key=cfg.key; SB.lastSync=cfg.lastSync||null;
+    SB.connected=false; // ping 후 설정
+  }catch(e){}
+}
+function sbSaveConfig(){ localStorage.setItem('vc-sb',JSON.stringify({url:SB.url,key:SB.key,lastSync:SB.lastSync})); }
+function sbBadge(st){
+  var b=document.getElementById('sbBadge'), l=document.getElementById('sbLbl');
+  b.className='dbbadge';
+  if(st==='on'){b.classList.add('st-sb');l.textContent='Supabase 연결됨';}
+  else if(st==='sync'){b.classList.add('st-sync');l.textContent='동기화 중...';}
+  else if(st==='err'){b.classList.add('st-err');l.textContent='연동 오류';}
+  else{l.textContent='Supabase';}
+}
+function sbUpdateUI(){
+  document.getElementById('sbUrl').value=SB.url||'';
+  // 키는 일부만 표시
+  document.getElementById('sbKey').value=SB.key?(SB.key.slice(0,20)+'....'):'';
+  document.getElementById('sbSyncBtn').disabled=!SB.connected;
+  document.getElementById('sbLastSync').textContent=SB.lastSync?'마지막 동기화: '+new Date(SB.lastSync).toLocaleString('ko-KR'):'마지막 동기화: 없음';
+  document.getElementById('sbStat').textContent=SB.connected?'Supabase DB에 연결됨':'연동 설정 후 동기화할 수 있습니다.';
+}
+async function sbConnect(){
+  var url=document.getElementById('sbUrl').value.trim();
+  var key=document.getElementById('sbKey').value.trim();
+  // 마스킹된 키면 기존 키 사용
+  if((key.endsWith('....')||key.endsWith('...')||key.includes('•'))&&SB.key) key=SB.key;
+  if(!url||!key){toast('URL과 Key는 필수입니다.',false);return;}
+  SB.url=url; SB.key=key;
+  sbBadge('sync'); document.getElementById('sbStat').textContent='연결 확인 중...';
+  try{
+    var res=await fetch(SB.url+'/rest/v1/prompts?limit=1',{headers:sbH()});
+    if(!res.ok)throw new Error('연결 실패. URL과 Key를 확인하세요. ('+res.status+')');
+    var remote=await sbRead();
+    if(remote.length===0&&prompts.length>0){
+      for(var i=prompts.length-1;i>=0;i--)await sbInsert(prompts[i]);
+      var uploaded=await sbRead(); prompts=uploaded.map(sbRow); saveLocal();
+    }else if(remote.length>0){
+      prompts=remote.map(sbRow); saveLocal();
+    }
+    var cats=await sbReadCats();
+    cats.forEach(function(c){if(!CATS[c.name])regCat(c.name);}); saveCustomCats();
+    SB.connected=true; SB.lastSync=new Date().toISOString();
+    sbSaveConfig(); sbBadge('on'); sbUpdateUI(); closeModal('sbModal'); render(); toast('Supabase 연동 완료!');
+  }catch(e){
+    SB.connected=false; sbBadge('err');
+    document.getElementById('sbStat').textContent='오류: '+e.message;
+    toast('연동 실패: '+e.message,false);
+  }
+}
+async function sbSync(){
+  if(!SB.connected)return;
+  sbBadge('sync'); document.getElementById('sbSyncBtn').disabled=true;
+  try{
+    var remote=await sbRead(); prompts=remote.map(sbRow); saveLocal();
+    var cats=await sbReadCats();
+    cats.forEach(function(c){if(!CATS[c.name])regCat(c.name);}); saveCustomCats();
+    SB.lastSync=new Date().toISOString(); sbSaveConfig(); sbBadge('on'); sbUpdateUI(); render(); toast('동기화 완료!');
+  }catch(e){sbBadge('err');toast('동기화 실패: '+e.message,false);}
+  document.getElementById('sbSyncBtn').disabled=false;
+}
+function sbDisconnect(){
+  if(!confirm('Supabase 연동을 해제할까요?\n로컬 데이터는 유지됩니다.'))return;
+  SB.connected=false; localStorage.removeItem('vc-sb');
+  sbBadge(''); sbUpdateUI(); closeModal('sbModal'); toast('Supabase 연동 해제됨.');
+}
+
+// ══════════════════════════════════════════
+// GITHUB
+// ══════════════════════════════════════════
+function ghLoadConfig(){
+  try{
+    var c=JSON.parse(localStorage.getItem('vc-gh')||'{}');
+    GH.user=c.user||''; GH.repo=c.repo||''; GH.branch=c.branch||'main';
+    GH.token=c.token||''; GH.lastSync=c.lastSync||null;
+    GH.connected=!!(GH.user&&GH.repo&&GH.token);
+  }catch(e){}
+}
+function ghSaveConfig(){ localStorage.setItem('vc-gh',JSON.stringify({user:GH.user,repo:GH.repo,branch:GH.branch,token:GH.token,lastSync:GH.lastSync})); }
+function ghBadge(st){
+  var b=document.getElementById('ghBadge'), l=document.getElementById('ghLbl');
+  b.className='dbbadge';
+  if(st==='on'){b.classList.add('st-on');l.textContent=GH.user+'/'+GH.repo;}
+  else if(st==='sync'){b.classList.add('st-sync');l.textContent='동기화 중...';}
+  else if(st==='err'){b.classList.add('st-err');l.textContent='연동 오류';}
+  else{l.textContent='GitHub';}
+}
+function ghUpdateUI(){
+  document.getElementById('ghUser').value=GH.user; document.getElementById('ghRepo').value=GH.repo;
+  document.getElementById('ghBranch').value=GH.branch||'main';
+  document.getElementById('ghToken').value=GH.token?'•'.repeat(20):'';
+  document.getElementById('ghSyncBtn').disabled=!GH.connected;
+  document.getElementById('ghLastSync').textContent=GH.lastSync?'마지막 동기화: '+new Date(GH.lastSync).toLocaleString('ko-KR'):'마지막 동기화: 없음';
+  document.getElementById('ghStat').textContent=GH.connected?GH.user+'/'+GH.repo+' 연동됨':'연동 설정 후 동기화할 수 있습니다.';
+}
+function ghH(){return{'Authorization':'token '+GH.token,'Content-Type':'application/json','Accept':'application/vnd.github.v3+json'};}
+function ghUrl(p){return'https://api.github.com/repos/'+GH.user+'/'+GH.repo+p;}
+async function ghRead(){
+  var res=await fetch(ghUrl('/contents/data/prompts.json?ref='+GH.branch),{headers:ghH()});
+  if(res.status===404){GH.sha='';return{prompts:[],customCats:[]};}
+  if(!res.ok){var e=await res.json();throw new Error(e.message||'GitHub READ 오류');}
+  var f=await res.json(); GH.sha=f.sha;
+  return JSON.parse(decodeURIComponent(escape(atob(f.content.replace(/\n/g,'')))));
+}
+async function ghWrite(data){
+  var body={message:'Update prompts ['+new Date().toISOString().slice(0,19)+']',content:btoa(unescape(encodeURIComponent(JSON.stringify(data,null,2)))),branch:GH.branch};
+  if(GH.sha)body.sha=GH.sha;
+  var res=await fetch(ghUrl('/contents/data/prompts.json'),{method:'PUT',headers:ghH(),body:JSON.stringify(body)});
+  if(!res.ok){var e=await res.json();throw new Error(e.message||'GitHub WRITE 오류');}
+  var r=await res.json(); GH.sha=r.content.sha;
+}
+async function ghConnect(){
+  var tkVal=document.getElementById('ghToken').value.trim();
+  GH.user=document.getElementById('ghUser').value.trim();
+  GH.repo=document.getElementById('ghRepo').value.trim();
+  GH.branch=document.getElementById('ghBranch').value.trim()||'main';
+  if(tkVal&&!tkVal.startsWith('•'))GH.token=tkVal;
+  if(!GH.user||!GH.repo||!GH.token){toast('사용자명, 저장소명, 토큰은 필수입니다.',false);return;}
+  ghBadge('sync'); document.getElementById('ghStat').textContent='연결 확인 중...';
+  try{
+    var rr=await fetch(ghUrl(''),{headers:ghH()}); if(!rr.ok)throw new Error('저장소에 접근할 수 없습니다.');
+    var remote=await ghRead();
+    if(remote.prompts&&remote.prompts.length>0){
+      var ids=new Set(prompts.map(function(p){return p.id;}));
+      prompts=prompts.concat(remote.prompts.filter(function(p){return !ids.has(p.id);})); saveData();
+      if(remote.customCats){remote.customCats.forEach(function(c){if(!CATS[c])regCat(c);});saveCustomCats();} render();
+    }else{
+      var cc=Object.keys(CATS).filter(function(c){return !BUILTIN.includes(c);});
+      await ghWrite({prompts:prompts,customCats:cc});
+    }
+    GH.connected=true; GH.lastSync=new Date().toISOString();
+    ghSaveConfig(); ghBadge('on'); ghUpdateUI(); closeModal('ghModal'); toast('GitHub 연동 완료!');
+  }catch(e){GH.connected=false;ghBadge('err');document.getElementById('ghStat').textContent='오류: '+e.message;toast('연동 실패: '+e.message,false);}
+}
+async function ghSync(){
+  if(!GH.connected)return; ghBadge('sync'); document.getElementById('ghSyncBtn').disabled=true;
+  document.getElementById('ghStat').textContent='동기화 중...';
+  try{
+    var remote=await ghRead();
+    var lids=new Set(prompts.map(function(p){return p.id;}));
+    var merged=prompts.slice(); (remote.prompts||[]).forEach(function(p){if(!lids.has(p.id))merged.push(p);});
+    if(remote.customCats){remote.customCats.forEach(function(c){if(!CATS[c])regCat(c);});saveCustomCats();}
+    prompts=merged; saveData();
+    var cc=Object.keys(CATS).filter(function(c){return !BUILTIN.includes(c);});
+    await ghWrite({prompts:prompts,customCats:cc});
+    GH.lastSync=new Date().toISOString(); ghSaveConfig(); ghBadge('on'); ghUpdateUI(); render(); toast('동기화 완료!');
+  }catch(e){ghBadge('err');document.getElementById('ghStat').textContent='오류: '+e.message;toast('동기화 실패: '+e.message,false);}
+  document.getElementById('ghSyncBtn').disabled=false;
+}
+function ghDisconnect(){
+  if(!confirm('GitHub 연동을 해제할까요?\n로컬 데이터는 유지됩니다.'))return;
+  GH.user='';GH.repo='';GH.token='';GH.connected=false;GH.sha='';
+  localStorage.removeItem('vc-gh'); ghBadge(''); ghUpdateUI(); closeModal('ghModal'); toast('GitHub 연동 해제됨.');
+}
+function toggleGhEye(){
+  var i=document.getElementById('ghToken'),e=document.getElementById('ghEye');
+  i.type=i.type==='password'?'text':'password'; e.textContent=i.type==='password'?'👁':'🙈';
+}
+
+// ══════════════════════════════════════════
+// MODAL
+// ══════════════════════════════════════════
+function openModal(id){
+  document.getElementById(id).classList.add('open');
+  if(id==='sbModal')sbUpdateUI();
+  if(id==='ghModal')ghUpdateUI();
+}
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+
+document.querySelectorAll('.ov').forEach(function(el){
+  el.addEventListener('click',function(e){ if(e.target===el)el.classList.remove('open'); });
+});
+document.addEventListener('keydown',function(e){
+  if(e.key==='Escape'){
+    ['addModal','viewModal','keyModal','shareModal','sbModal','ghModal'].forEach(function(id){closeModal(id);});
+    closeAi();
+  }
+  if(e.key==='Enter'&&e.ctrlKey){
+    if(document.getElementById('addModal').classList.contains('open'))savePrompt();
+  }
+});
+
+// ══════════════════════════════════════════
+// TOAST
+// ══════════════════════════════════════════
+function toast(msg, ok){
+  if(ok===undefined)ok=true;
+  document.getElementById('toastDot').style.background=ok?'var(--grn)':'#E07070';
+  document.getElementById('toastMsg').textContent=msg;
+  var t=document.getElementById('toast'); t.classList.add('show');
+  clearTimeout(tTimer); tTimer=setTimeout(function(){t.classList.remove('show');},2400);
+}
+
+// ══════════════════════════════════════════
+// UTILS
+// ══════════════════════════════════════════
+function esc(s){
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+// ══════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════
+loadLocal();
+loadCustomCats();
+sbLoadConfig();
+ghLoadConfig();
+sbBadge('');
+sbUpdateUI();
+ghBadge(GH.connected?'on':'');
+ghUpdateUI();
+// SB 자동 연결
+if(SB.url&&SB.key){
+  sbBadge('sync');
+  fetch(SB.url+'/rest/v1/prompts?limit=1',{headers:{'apikey':SB.key,'Authorization':'Bearer '+SB.key}})
+    .then(function(res){
+      if(res.ok){
+        SB.connected=true; sbBadge('on'); sbUpdateUI();
+        return sbSync();
+      }else{
+        sbBadge('err');
+      }
+    })
+    .catch(function(){sbBadge('err');});
+}else if(GH.connected){
+  ghSync().catch(function(){});
+}
+render();
+</script>
+</body>
+</html>
